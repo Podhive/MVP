@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api", // Updated to include /api prefix
+  baseURL: "https://mvp-40c2.onrender.com/api", // Updated to include /api prefix
   headers: {
     "Content-Type": "application/json",
   },

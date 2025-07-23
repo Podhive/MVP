@@ -35,9 +35,6 @@ const generateToken = (id, userType) => {
 // @desc    Register new user
 // @route   POST /user/signup
 const registerUser = async (req, res) => {
-  console.log("EMAIL_USER:", process.env.EMAIL_USER);
-  console.log("EMAIL_PASS:", process.env.EMAIL_PASS);
-
   const { name, password, userType, phone } = req.body;
 
   // Check for all fields, including email before lowercasing
