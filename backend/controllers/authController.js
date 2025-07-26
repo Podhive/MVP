@@ -85,7 +85,12 @@ const registerUser = async (req, res) => {
         isVerified: false,
       });
     }
-
+    // Send SMS OTP
+    await twilioClient.messages.create({
+      body: `Your phone OTP is: ${phoneOtp}`,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: `+91${phone}`,
+    });
     // Send email OTP
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
@@ -93,13 +98,6 @@ const registerUser = async (req, res) => {
       to: email,
       subject: "Your Email OTP",
       text: `Your email OTP is: ${emailOtp}`,
-    });
-
-    // Send SMS OTP
-    await twilioClient.messages.create({
-      body: `Your phone OTP is: ${phoneOtp}`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: `+91${phone}`,
     });
 
     res.status(201).json({

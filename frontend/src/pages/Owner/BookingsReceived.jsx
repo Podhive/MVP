@@ -23,6 +23,7 @@ const BookingsReceived = () => {
     const fetchBookings = async () => {
       try {
         const response = await getOwnerBookings();
+        console.log(response);
         setBookings(response.data);
       } catch (error) {
         console.error("Error fetching bookings:", error);
