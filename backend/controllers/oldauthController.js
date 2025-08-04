@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
-const unirest = require("unirest"); // Replaced twilio with unirest
+const twilio = require("twilio");
 const User = require("../models/User");
 require("dotenv").config();
 
@@ -15,6 +15,12 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 });
+
+// Twilio client setup
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 
 // Generates a 4-digit OTP
 const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
@@ -79,30 +85,12 @@ const registerUser = async (req, res) => {
         isVerified: false,
       });
     }
-
-    // --- Start of Fast2SMS integration ---
-    const fast2smsReq = unirest("POST", "https://www.fast2sms.com/dev/bulkV2");
-
-    fast2smsReq.headers({
-      authorization: process.env.FAST2SMS_API_KEY, // Store your API key in .env
+    // Send SMS OTP
+    await twilioClient.messages.create({
+      body: `Your phone OTP is: ${phoneOtp}`,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: `+91${phone}`,
     });
-
-    fast2smsReq.form({
-      variables_values: phoneOtp,
-      route: "otp",
-      numbers: phone,
-    });
-
-    fast2smsReq.end(function (response) {
-      if (response.error) {
-        console.error("Fast2SMS Error:", response.error);
-        // Decide if you want to throw an error or just log it
-        // For now, we will just log it and the function will proceed
-      }
-      console.log("Fast2SMS Response:", response.body);
-    });
-    // --- End of Fast2SMS integration ---
-
     // Send email OTP
     await transporter.sendMail({
       from: process.env.EMAIL_USER,

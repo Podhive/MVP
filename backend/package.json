@@ -20,6 +20,7 @@
     "multer": "^2.0.0",
     "nodemailer": "^7.0.3",
     "parser": "^0.1.4",
-    "twilio": "^5.6.1"
+    "twilio": "^5.6.1",
+    "unirest": "^0.6.0"
   }
 }
