@@ -16,6 +16,7 @@ const PackageSchema = new Schema(
 const AddOnSchema = new Schema(
   {
     key: { type: String, required: true }, // e.g. "Podcast Edit Full"
+    name: { type: String, required: true },
     price: { type: Number, required: true },
     description: { type: String, default: "" },
     maxQuantity: { type: Number, default: 1 }, // for services you can pick multiples
@@ -43,7 +44,7 @@ const LocationSchema = new Schema(
   { _id: false }
 );
 
-// Studio schema\ n
+// Studio schema
 const StudioSchema = new Schema(
   {
     name: { type: String, required: true },
@@ -64,6 +65,21 @@ const StudioSchema = new Schema(
     },
     packages: [PackageSchema], // exactly three expected
     addons: [AddOnSchema], // zero or more
+
+    // Fields for social links
+    youtubeLinks: {
+      type: [String],
+      validate: [
+        (val) => val.length <= 2,
+        "You can add a maximum of 2 YouTube links.",
+      ],
+      default: [],
+    },
+    instagramUsername: {
+      type: String,
+      trim: true,
+      default: "",
+    },
   },
   { timestamps: true }
 );

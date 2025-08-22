@@ -27,16 +27,16 @@ const Home = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-white">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-                Professional
+                Discover
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">
-                  Podcast Studios
+                  Professional Studios
                 </span>
                 Near You
               </h1>
               <p className="text-xl md:text-2xl mb-8 text-indigo-100 leading-relaxed">
-                Discover, book, and record in top-quality podcast studios.
-                Perfect for creators, professionals, and podcasters of all
-                levels.
+                One platform for every creator – from musicians to podcasters to
+                filmmakers. Discover verified studios near you and book with
+                ease.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
@@ -80,8 +80,9 @@ const Home = () => {
               Why Choose PodHive?
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              We make it easy to find and book professional podcast studios with
-              everything you need for a perfect recording session.
+              One platform. Endless studios. Whether you’re recording, shooting,
+              or podcasting — PodHive connects you to the perfect space,
+              hassle-free.
             </p>
           </div>
 
@@ -159,8 +160,9 @@ const Home = () => {
                 Community Driven
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Join a community of podcasters and studio owners working
-                together to create amazing content and experiences.
+                Join creators, professionals, and teams who trust PodHive to
+                find the right studio for recording, shooting, or content
+                creation. Start your creative journey today.
               </p>
             </div>
           </div>
@@ -202,9 +204,9 @@ const Home = () => {
             Ready to Start Recording?
           </h2>
           <p className="text-xl text-indigo-100 mb-10 max-w-3xl mx-auto leading-relaxed">
-            Join thousands of podcasters who trust PodHive to find the perfect
-            studio for their recording needs. Start your podcasting journey
-            today.
+            Join creators, professionals, and teams who trust PodHive to find
+            the right studio for recording, shooting, or content creation. Start
+            your creative journey today.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link
@@ -220,7 +222,7 @@ const Home = () => {
                 className="inline-flex items-center justify-center bg-transparent text-white font-semibold px-8 py-4 rounded-xl border-2 border-white hover:bg-white hover:text-indigo-600 transition-colors"
               >
                 <Users className="mr-2 h-5 w-5" />
-                Join as Owner
+                List a Studio
               </Link>
             )}
           </div>
@@ -237,9 +239,9 @@ const Home = () => {
                 <span className="text-2xl font-bold">PodHive</span>
               </div>
               <p className="text-gray-400 mb-4 max-w-md">
-                The premier platform for booking professional podcast studios.
-                Connect creators with amazing spaces to bring their stories to
-                life.
+                One platform. Endless studios. Discover podcast, recording, and
+                shooting spaces near you — book instantly and create without
+                limits.
               </p>
             </div>
 

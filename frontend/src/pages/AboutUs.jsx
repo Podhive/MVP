@@ -95,7 +95,7 @@ const AboutUs = () => {
             About Us – PodHive Studios
           </h1>
           <p className="text-2xl text-indigo-600 font-semibold max-w-4xl mx-auto">
-            India's First Podcast Studio Aggregator & Booking Platform
+            India's First Studio Aggregator & Booking Platform
           </p>
         </div>
 
@@ -110,9 +110,9 @@ const AboutUs = () => {
           <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed">
             <p className="mb-4">
               In early 2024, PodHive began as a response to a simple but
-              frustrating problem: our founder couldn't book a podcast studio
-              without getting ghosted, rescheduled, or juggled between multiple
-              WhatsApp chats.
+              frustrating problem: our founder couldn't book a professional
+              studio without getting ghosted, rescheduled, or juggled between
+              multiple WhatsApp chats.
             </p>
             <p className="mb-4">
               It was chaos — studios were scattered across Instagram, pricing
@@ -122,12 +122,12 @@ const AboutUs = () => {
             <p className="mb-4">
               That's when the idea hit:{" "}
               <strong>
-                Why isn't there an aggregator platform for podcast studios?
+                Why isn't there an aggregator platform for studios?
               </strong>
             </p>
             <p className="text-indigo-600 font-semibold">
               PodHive was created to fix that — by building the simplest, most
-              reliable way to discover and book podcast spaces in India.
+              reliable way to discover and book studio spaces in India.
             </p>
           </div>
         </div>
@@ -141,8 +141,8 @@ const AboutUs = () => {
           <div className="text-xl leading-relaxed mb-6">
             <p className="mb-4">
               <strong>
-                To make podcasting accessible and effortless for anyone with a
-                voice.
+                Making podcasting and recording accessible and effortless for
+                everyone with a voice.
               </strong>
             </p>
             <p className="mb-4">
@@ -264,10 +264,9 @@ const AboutUs = () => {
           </div>
 
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
-            <p className="text-gray-700">
-              We're supported by a team of full-stack developers, interns, and
-              creative thinkers who believe India's podcast boom is just getting
-              started.
+            <p className="text-gray-700 text-center">
+              Web application designed, developed, deployed, and managed by
+              Tanishq Vats.
             </p>
           </div>
         </div>

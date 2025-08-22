@@ -12,6 +12,8 @@ import {
   Package,
   Wrench,
   Trash2,
+  Youtube,
+  Instagram,
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -66,6 +68,8 @@ const EditStudio = () => {
       state: "",
       pinCode: "",
     },
+    youtubeLinks: ["", ""],
+    instagramUsername: "",
   });
 
   const [existingImages, setExistingImages] = useState([]);
@@ -118,10 +122,7 @@ const EditStudio = () => {
                 console.warn("Skipping invalid availability entry:", day);
                 return null;
               }
-
-              // **FIXED LOGIC**: Directly parse the ISO string from the database.
               const date = new Date(day.date);
-
               if (isNaN(date.getTime())) {
                 console.warn(
                   "Skipping entry with invalid date format:",
@@ -129,7 +130,6 @@ const EditStudio = () => {
                 );
                 return null;
               }
-
               return {
                 dateKey: date.toISOString(),
                 date: date,
@@ -141,6 +141,8 @@ const EditStudio = () => {
 
           setAvailability(loadedAvailability);
         }
+
+        const youtubeLinks = foundStudio.youtubeLinks || [];
 
         setFormData({
           name: foundStudio.name || "",
@@ -182,6 +184,8 @@ const EditStudio = () => {
             state: foundStudio.location?.state || "",
             pinCode: foundStudio.location?.pinCode || "",
           },
+          youtubeLinks: [youtubeLinks[0] || "", youtubeLinks[1] || ""],
+          instagramUsername: foundStudio.instagramUsername || "",
         });
       } catch (error) {
         console.error("Error fetching studio:", error);
@@ -210,6 +214,15 @@ const EditStudio = () => {
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handleYoutubeLinkChange = (index, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      youtubeLinks: prev.youtubeLinks.map((link, i) =>
+        i === index ? value : link
+      ),
+    }));
   };
 
   const handleEquipmentToggle = (equipment) => {
@@ -248,21 +261,44 @@ const EditStudio = () => {
   };
 
   const handleAddAddon = () => {
-    if (newAddon.key && newAddon.name && newAddon.price) {
+    // Trim whitespace from inputs to ensure fields aren't just spaces
+    const trimmedKey = newAddon.key.trim(); //
+    const trimmedName = newAddon.name.trim(); //
+
+    // More explicit validation check for required fields
+    if (trimmedKey && trimmedName && newAddon.price) {
+      //
       setFormData((prev) => ({
-        ...prev,
+        //
+        ...prev, //
         addons: [
-          ...prev.addons,
-          { ...newAddon, price: parseFloat(newAddon.price) },
+          //
+          ...prev.addons, //
+          // Create a new object explicitly to ensure structure matches the schema
+          {
+            key: trimmedKey, //
+            name: trimmedName, //
+            price: parseFloat(newAddon.price), //
+            description: newAddon.description.trim(), //
+            maxQuantity: newAddon.maxQuantity, //
+          },
         ],
       }));
+      // Reset form for the next entry
       setNewAddon({
-        key: "",
-        name: "",
-        price: "",
-        description: "",
-        maxQuantity: 1,
+        //
+        key: "", //
+        name: "", //
+        price: "", //
+        description: "", //
+        maxQuantity: 1, //
       });
+    } else {
+      // Provide feedback to the user if validation fails
+      toast.error(
+        //
+        "Please provide a valid Key, Name, and Price for the add-on service." //
+      );
     }
   };
 
@@ -448,6 +484,11 @@ const EditStudio = () => {
       formDataObj.append("location", JSON.stringify(formData.location));
       formDataObj.append("availability", JSON.stringify(formattedAvailability));
       formDataObj.append("existingImages", JSON.stringify(existingImages));
+      formDataObj.append(
+        "youtubeLinks",
+        JSON.stringify(formData.youtubeLinks.filter((link) => link))
+      );
+      formDataObj.append("instagramUsername", formData.instagramUsername);
 
       imageFiles.forEach((file) => {
         formDataObj.append("images", file);
@@ -538,6 +579,71 @@ const EditStudio = () => {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                     placeholder="Describe your studio, its features, and what makes it special..."
                   ></textarea>
+                </div>
+              </div>
+            </div>
+
+            {/* Social Links */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center mb-6">
+                <Instagram className="h-6 w-6 text-indigo-600 mr-2" />
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Social & Video Links
+                </h2>
+              </div>
+              <div className="space-y-6">
+                <div>
+                  <label
+                    htmlFor="instagramUsername"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Instagram Username (Optional)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                      @
+                    </span>
+                    <input
+                      id="instagramUsername"
+                      name="instagramUsername"
+                      type="text"
+                      value={formData.instagramUsername}
+                      onChange={handleChange}
+                      className="w-full p-3 pl-7 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      placeholder="your_username"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    YouTube Embed Links (Optional)
+                  </label>
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <Youtube className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.youtubeLinks[0]}
+                        onChange={(e) =>
+                          handleYoutubeLinkChange(0, e.target.value)
+                        }
+                        className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="e.g., https://www.youtube.com/embed/your_video_id"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Youtube className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.youtubeLinks[1]}
+                        onChange={(e) =>
+                          handleYoutubeLinkChange(1, e.target.value)
+                        }
+                        className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="e.g., https://www.youtube.com/embed/your_video_id"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -756,7 +862,7 @@ const EditStudio = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Service Key
+                      Service Key *
                     </label>
                     <input
                       type="text"
@@ -773,7 +879,7 @@ const EditStudio = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Service Name
+                      Service Name *
                     </label>
                     <input
                       type="text"
@@ -790,7 +896,7 @@ const EditStudio = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Price (₹)
+                      Price (₹) *
                     </label>
                     <input
                       type="number"
@@ -817,7 +923,7 @@ const EditStudio = () => {
                       onChange={(e) =>
                         setNewAddon((prev) => ({
                           ...prev,
-                          maxQuantity: parseInt(e.target.value),
+                          maxQuantity: parseInt(e.target.value) || 1,
                         }))
                       }
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"

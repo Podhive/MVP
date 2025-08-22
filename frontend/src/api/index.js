@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://mvp-40c2.onrender.com/api", // Updated to include /api prefix
+  baseURL: "http://localhost:5000/api", // Updated to include /api prefix
   headers: {
     "Content-Type": "application/json",
   },
@@ -25,6 +25,14 @@ export const submitStudioInquiry = (inquiryData) =>
 export const signup = (userData) => API.post("/user/signup", userData);
 export const verifyOtp = (otpData) => API.post("/user/verify-otp", otpData);
 export const login = (credentials) => API.post("/user/login", credentials);
+
+// Password Reset
+export const forgotPassword = (emailData) =>
+  API.post("/user/forgot-password", emailData);
+export const verifyPasswordOtp = (otpData) =>
+  API.post("/user/verify-password-otp", otpData);
+export const resetPassword = (passwordData) =>
+  API.post("/user/reset-password", passwordData);
 
 // Studios
 export const fetchStudios = () => API.get("/studio");
@@ -54,14 +62,10 @@ export const getReviewsByStudio = (studioId) =>
 export const updateReview = (id, data) => API.put(`/review/${id}`, data);
 export const deleteReview = (id) => API.delete(`/review/${id}`);
 
-// // Studio Inquiry
-// export const submitStudioInquiry = (inquiryData) =>
-//   API.post("/studio-inquiry", inquiryData);
-
 // Admin
 export const getPendingStudios = () => API.get("/admin/studios/pending");
 export const approveStudio = (id) => API.put(`/admin/studios/${id}/approve`);
-export const denyStudio = (id) => API.delete(`/studios/${id}/deny`);
+export const denyStudio = (id) => API.delete(`/admin/studios/${id}/deny`);
 export const getAllBookingsAdmin = () => API.get("/admin/bookings");
 export const deleteBookingAdmin = (id) => API.delete(`/admin/bookings/${id}`);
 

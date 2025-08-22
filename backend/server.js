@@ -1,8 +1,8 @@
 const express = require("express");
 const dotenv = require("dotenv");
-const cors = require("cors"); // ✅ Import CORS
+const cors = require("cors");
 const connectDB = require("./config/db");
-
+require("./scheduler");
 const bookingRouter = require("./routes/bookingRouter");
 const userRouter = require("./routes/userRouter");
 const studioRouter = require("./routes/studioRouter");
@@ -17,18 +17,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// app.use(
-//   cors({
-//     origin: [
-//       "http://localhost:5173",
-//       "https://guileless-baklava-1da36e.netlify.app",
-//     ],
-//     credentials: true,
-//   })
-// );
 app.use(
   cors({
-    origin: "https://podhive.in",
+    origin: ["http://localhost:5173", "https://podhive.in"],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",

@@ -1,19 +1,22 @@
 const Review = require("../models/Review");
+const Booking = require("../models/Booking"); // Import the Booking model
 
 // @desc    Create a new review
 // @route   POST /api/reviews
 // @access  Private
 const createReview = async (req, res) => {
   const { studio, rating, description } = req.body;
+  const reviewerId = req.user._id;
 
   if (!studio || !rating || !description) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
   try {
+    // 1. Check if the user has already reviewed this studio
     const existingReview = await Review.findOne({
       studio,
-      reviewer: req.user._id,
+      reviewer: reviewerId,
     });
 
     if (existingReview) {
@@ -22,9 +25,23 @@ const createReview = async (req, res) => {
         .json({ message: "You have already reviewed this studio" });
     }
 
+    // 2. Check if the user has a completed past booking for this studio
+    const pastBooking = await Booking.findOne({
+      studio,
+      customer: reviewerId,
+      date: { $lt: new Date() }, // Check if the booking date is in the past
+    });
+
+    if (!pastBooking) {
+      return res.status(403).json({
+        message: "You can only review studios you have a past booking with.",
+      });
+    }
+
+    // 3. If both checks pass, create the new review
     const review = await Review.create({
       studio,
-      reviewer: req.user._id,
+      reviewer: reviewerId,
       rating,
       description,
     });

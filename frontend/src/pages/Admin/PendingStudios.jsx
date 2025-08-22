@@ -75,23 +75,19 @@ const PendingStudios = () => {
     if (!operationalHours) return "Not specified";
 
     const formatTime = (time) => {
-      if (!time || typeof time !== "string") return "Invalid time";
-
-      try {
-        const [hour, minute] = time.split(":");
-        if (!hour || !minute) return "Invalid time";
-
-        const hourNum = parseInt(hour);
-        if (isNaN(hourNum)) return "Invalid time";
-
-        const period = hourNum >= 12 ? "PM" : "AM";
-        const displayHour =
-          hourNum > 12 ? hourNum - 12 : hourNum === 0 ? 12 : hourNum;
-        return `${displayHour}:${minute} ${period}`;
-      } catch (error) {
-        console.error("Error formatting time:", error);
+      // FIX: Handles numeric time values (e.g., 9) by converting them to "09:00"
+      if (typeof time === "number") {
+        time = `${time.toString().padStart(2, "0")}:00`;
+      } else if (!time || typeof time !== "string" || !time.includes(":")) {
         return "Invalid time";
       }
+
+      const [hour, minute] = time.split(":");
+      const hourNum = parseInt(hour, 10);
+      const period = hourNum >= 12 ? "PM" : "AM";
+      const displayHour =
+        hourNum > 12 ? hourNum - 12 : hourNum === 0 ? 12 : hourNum;
+      return `${displayHour}:${minute} ${period}`;
     };
 
     // Handle different possible property names from backend

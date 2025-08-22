@@ -1,43 +1,49 @@
 import React, { useState, useMemo } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { format } from "date-fns";
+import { format, isSameDay, parseISO, isToday } from "date-fns";
 
 const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedHours, setSelectedHours] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);
 
-  // Memoize the available hours for the selected date for efficiency.
+  // Memoize the array of available dates so it's not recalculated on every render.
+  // This uses the `includeDates` prop for better performance in the DatePicker.
+  const availableDates = useMemo(() => {
+    // The backend sends dates in ISO format (e.g., "2025-08-23T00:00:00.000Z").
+    // We parse them into Date objects for the DatePicker.
+    return availableSlots.map((slot) => parseISO(slot.date));
+  }, [availableSlots]);
+
+  // Find the available hours for the date the user has selected.
   const availableHoursForSelectedDate = useMemo(() => {
     if (!selectedDate || !availableSlots) {
       return [];
     }
-    const todaysData = availableSlots.find(
-      (day) => new Date(day.date).toDateString() === selectedDate.toDateString()
+    // Find the data object for the selected date.
+    // `isSameDay` provides a robust comparison, ignoring time-of-day differences.
+    const todaysData = availableSlots.find((day) =>
+      isSameDay(parseISO(day.date), selectedDate)
     );
 
-    // **MODIFIED**: Added sorting for the hours array
     if (todaysData && todaysData.hours) {
-      // Sort hours in ascending order (e.g., 9, 10, 11, 12)
+      // ✅ THE FIX: If the selected date is today, filter out past hours.
+      if (isToday(selectedDate)) {
+        const currentHour = new Date().getHours();
+        return todaysData.hours
+          .filter((hour) => hour >= currentHour)
+          .sort((a, b) => a - b);
+      }
+      // For any future date, return all available hours.
       return [...todaysData.hours].sort((a, b) => a - b);
     }
 
     return [];
   }, [selectedDate, availableSlots]);
 
-  // Function to determine which dates are selectable in the calendar
-  const isDateAvailable = (dateToFilter) => {
-    if (!availableSlots) return false;
-    // Check if any entry in the API data matches the date
-    return availableSlots.some(
-      (day) => new Date(day.date).toDateString() === dateToFilter.toDateString()
-    );
-  };
-
   const handleDateChange = (date) => {
     setSelectedDate(date);
-    // Reset selections when the date changes
     setSelectedHours([]);
     setSelectedPackage(null);
   };
@@ -97,7 +103,7 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
         <DatePicker
           selected={selectedDate}
           onChange={handleDateChange}
-          filterDate={isDateAvailable}
+          includeDates={availableDates}
           minDate={new Date()}
           placeholderText="Select an available date"
           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"

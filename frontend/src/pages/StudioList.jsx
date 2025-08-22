@@ -101,11 +101,12 @@ const StudioList = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Find Your Perfect Podcast Studio
+            Find Your Perfect Studio
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Discover professional podcast studios with top-quality equipment and
-            perfect acoustics for your next recording session.
+            From recording podcasts to shooting videos, find studios with
+            top-quality equipment and acoustics tailored for creators of every
+            kind.
           </p>
         </div>
 

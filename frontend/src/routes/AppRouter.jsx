@@ -17,6 +17,12 @@ import ContactUs from "../pages/ContactUs";
 import TermsOfService from "../pages/TermsOfServices";
 import PrivacyPolicy from "../pages/Privacy-info";
 
+// --- NEWLY ADDED IMPORTS ---
+import ForgotPassword from "../pages/ForgotPassword";
+import VerifyPasswordOtp from "../pages/VerifyPasswordOtp";
+import ResetPassword from "../pages/ResetPassword";
+// --- END NEW IMPORTS ---
+
 // Customer Pages
 import CustomerDashboard from "../pages/Customer/CustomerDashboard";
 import MyBookings from "../pages/Customer/MyBookings";
@@ -53,9 +59,19 @@ const AppRouter = () => {
       <Route path="/studios" element={<StudioList />} />
       <Route path="/studios/:studioId" element={<StudioDetails />} />
       <Route path="/add-your-studio" element={<AddYourStudio />} />
+
+      {/* Auth Routes */}
       <Route path="/login" element={<Login />} />
+      <Route path="/admin" element={<Login isAdminLogin={true} />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/verify-otp" element={<VerifyOtp />} />
+
+      {/* --- NEWLY ADDED FORGOT PASSWORD ROUTES --- */}
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/verify-password-otp" element={<VerifyPasswordOtp />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      {/* --- END NEW ROUTES --- */}
+
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/help" element={<HelpCenter />} />
       <Route path="/contact" element={<ContactUs />} />

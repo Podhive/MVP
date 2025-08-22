@@ -57,11 +57,13 @@ const parseJsonFields = (body) => ({
   operationalHours: body.operationalHours
     ? JSON.parse(body.operationalHours)
     : {},
+  youtubeLinks: body.youtubeLinks ? JSON.parse(body.youtubeLinks) : [],
+  existingImages: body.existingImages ? JSON.parse(body.existingImages) : [],
 });
 
 const addStudio = async (req, res) => {
   try {
-    const { name, description, pricePerHour } = req.body;
+    const { name, description, pricePerHour, instagramUsername } = req.body;
     const {
       equipments,
       packages,
@@ -69,6 +71,7 @@ const addStudio = async (req, res) => {
       location,
       availability,
       operationalHours,
+      youtubeLinks,
     } = parseJsonFields(req.body);
 
     const uploadedImages = await uploadImages(req.files || []);
@@ -83,6 +86,8 @@ const addStudio = async (req, res) => {
       operationalHours,
       packages,
       addons,
+      youtubeLinks,
+      instagramUsername,
       approved: false,
       pricePerHour: parseFloat(pricePerHour),
     });
@@ -110,23 +115,90 @@ const addStudio = async (req, res) => {
 
 const getStudios = async (req, res) => {
   try {
+    // 1. Fetch all approved studios first.
     const studios = await Studio.find({ approved: true });
-    const slots = await Availability.find({
-      studio: { $in: studios.map((s) => s._id) },
-    });
-    const slotMap = slots.reduce((acc, s) => {
-      const id = s.studio.toString();
-      acc[id] = acc[id] || [];
-      acc[id].push(s);
+
+    if (!studios.length) {
+      return res.json([]);
+    }
+
+    // --- TIMEZONE-AWARE LOGIC ---
+    // Assuming the server is configured for the IST timezone.
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Start of today (00:00:00)
+    const currentHour = now.getHours(); // Current hour (0-23)
+    // --- END ---
+
+    const studioIds = studios.map((s) => s._id);
+
+    // 2. Fetch and filter availability for all studios in a single, efficient database query.
+    const filteredSlots = await Availability.aggregate([
+      {
+        // Match availability for the relevant studios and from today onwards.
+        $match: {
+          studio: { $in: studioIds },
+          date: { $gte: today },
+        },
+      },
+      {
+        // Deconstruct the slots array to process each slot.
+        $unwind: "$slots",
+      },
+      {
+        // Filter for slots that are actually available.
+        $match: {
+          "slots.isAvailable": true,
+        },
+      },
+      {
+        // THE CORE FIX: Filter out past hours for the current day.
+        $match: {
+          $or: [
+            { date: { $gt: today } }, // Keep if the date is in the future.
+            {
+              $and: [
+                { date: { $eq: today } }, // OR if the date is today...
+                { "slots.hour": { $gte: currentHour } }, // ...and the hour has not passed yet.
+              ],
+            },
+          ],
+        },
+      },
+      {
+        // Group the valid slots back together by their original studio and date.
+        $group: {
+          _id: { studio: "$studio", date: "$date" },
+          slots: { $push: "$slots" },
+        },
+      },
+      {
+        // Now, group all the date documents by studio ID.
+        $group: {
+          _id: "$_id.studio",
+          availability: {
+            $push: {
+              date: "$_id.date",
+              slots: "$slots",
+            },
+          },
+        },
+      },
+    ]);
+
+    // 3. Create a map for easy lookup (Studio ID => Availability Array).
+    const slotMap = filteredSlots.reduce((acc, item) => {
+      acc[item._id.toString()] = item.availability;
       return acc;
     }, {});
-    return res.json(
-      studios.map((studio) => ({
-        ...studio.toObject(),
-        availability: slotMap[studio._id.toString()] || [],
-        ratingSummary: studio.ratingSummary || { average: 0, count: 0 },
-      }))
-    );
+
+    // 4. Combine the studio data with its filtered availability.
+    const studiosWithAvailability = studios.map((studio) => ({
+      ...studio.toObject(),
+      availability: slotMap[studio._id.toString()] || [], // Use filtered availability or an empty array
+      ratingSummary: studio.ratingSummary || { average: 0, count: 0 },
+    }));
+
+    return res.json(studiosWithAvailability);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server Error" });
@@ -136,18 +208,16 @@ const getStudios = async (req, res) => {
 const updateStudio = async (req, res) => {
   try {
     const studio = await Studio.findById(req.params.id);
-    if (!studio) return res.status(404).json({ message: "Not found" });
-    if (!studio.approved)
-      return res.status(403).json({ message: "Not approved" });
-    if (studio.author.toString() !== req.user._id.toString())
-      return res.status(401).json({ message: "Not authorized" });
-
-    if (req.files?.length) {
-      studio.images = await uploadImages(req.files);
-    } else if (req.body.existingImages) {
-      studio.images = JSON.parse(req.body.existingImages);
+    if (!studio) {
+      return res.status(404).json({ message: "Studio not found" });
+    }
+    if (studio.author.toString() !== req.user._id.toString()) {
+      return res
+        .status(401)
+        .json({ message: "Not authorized to edit this studio" });
     }
 
+    const { name, description, pricePerHour, instagramUsername } = req.body;
     const {
       equipments,
       packages,
@@ -155,37 +225,45 @@ const updateStudio = async (req, res) => {
       location,
       availability,
       operationalHours,
+      youtubeLinks,
+      existingImages,
     } = parseJsonFields(req.body);
 
-    ["name", "description", "pricePerHour"].forEach((f) => {
-      if (req.body[f] != null) studio[f] = req.body[f];
-    });
+    // Image handling
+    const newImages = req.files?.length ? await uploadImages(req.files) : [];
+    studio.images = [...existingImages, ...newImages];
 
-    Object.assign(studio, {
-      equipments,
-      packages,
-      addons,
-      location,
-      operationalHours,
-    });
+    // Update studio fields
+    studio.name = name;
+    studio.description = description;
+    studio.pricePerHour = parseFloat(pricePerHour);
+    studio.instagramUsername = instagramUsername;
+    studio.equipments = equipments;
+    studio.packages = packages;
+    studio.addons = addons;
+    studio.location = location;
+    studio.operationalHours = operationalHours;
+    studio.youtubeLinks = youtubeLinks;
 
-    if (availability.length) {
-      await Availability.deleteMany({ studio: studio._id });
-      const slots = availability.map((day) => ({
-        studio: studio._id,
-        date: day.date,
-        slots: day.slots.map((s) => ({
-          hour: s.hour,
-          isAvailable: s.isAvailable ?? true,
-        })),
+    // --- ROBUST AVAILABILITY UPDATE ---
+    if (availability && Array.isArray(availability)) {
+      const bulkOps = availability.map((day) => ({
+        updateOne: {
+          filter: { studio: studio._id, date: new Date(day.date) },
+          update: { $set: { slots: day.slots } },
+          upsert: true,
+        },
       }));
-      await Availability.insertMany(slots);
+      if (bulkOps.length > 0) {
+        await Availability.bulkWrite(bulkOps);
+      }
     }
+    // --- END OF FIX ---
 
-    const updated = await studio.save();
-    return res.json(updated);
+    const updatedStudio = await studio.save();
+    return res.json(updatedStudio);
   } catch (err) {
-    console.error(" updateStudio error:", err);
+    console.error("❌ updateStudio error:", err);
     return res.status(500).json({ message: "Server Error" });
   }
 };
@@ -194,8 +272,7 @@ const deleteStudio = async (req, res) => {
   try {
     const studio = await Studio.findById(req.params.id);
     if (!studio) return res.status(404).json({ message: "Studio not found" });
-    if (!studio.approved)
-      return res.status(403).json({ message: "Studio not approved" });
+
     if (studio.author.toString() !== req.user._id.toString())
       return res.status(401).json({ message: "Not authorized" });
 

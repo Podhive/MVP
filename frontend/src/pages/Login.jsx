@@ -1,18 +1,25 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Mic, Eye, EyeOff } from "lucide-react";
 import useAuth from "../context/useAuth";
 import Navbar from "../components/Navbar";
 
-const Login = () => {
+const Login = ({ isAdminLogin = false }) => {
   const { login, loading } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    userType: "customer",
+    userType: isAdminLogin ? "admin" : "customer",
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    // Ensure userType is set to admin if it's the admin login page
+    if (isAdminLogin) {
+      setFormData((prev) => ({ ...prev, userType: "admin" }));
+    }
+  }, [isAdminLogin]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -52,7 +59,8 @@ const Login = () => {
 
     try {
       await login(formData);
-      // Redirect is handled in the AuthContext
+      // Redirect is handled in the AuthContext, which should redirect
+      // admin to /dashboard/admin upon successful login.
     } catch (error) {
       console.error("Login error:", error);
 
@@ -83,9 +91,13 @@ const Login = () => {
                   <Mic className="h-8 w-8 text-white" />
                 </div>
               </div>
-              <h1 className="text-2xl font-bold text-white">Welcome Back</h1>
+              <h1 className="text-2xl font-bold text-white">
+                {isAdminLogin ? "Admin Sign In" : "Welcome Back"}
+              </h1>
               <p className="text-indigo-100 mt-1">
-                Sign in to your PodHive account
+                {isAdminLogin
+                  ? "Access the PodHive Admin Dashboard"
+                  : "Sign in to your PodHive account"}
               </p>
             </div>
 
@@ -124,13 +136,27 @@ const Login = () => {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Password
-                  </label>
-                  <div className="relative">
+                  {/* --- MODIFIED SECTION --- */}
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Password
+                    </label>
+                    {!isAdminLogin && (
+                      <div className="text-sm">
+                        <Link
+                          to="/forgot-password"
+                          className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+                        >
+                          Forgot your password?
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative mt-2">
+                    {/* --- END MODIFIED SECTION --- */}
                     <input
                       id="password"
                       type={showPassword ? "text" : "password"}
@@ -163,34 +189,35 @@ const Login = () => {
                   )}
                 </div>
 
-                <div>
-                  <label
-                    htmlFor="userType"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    I am a
-                  </label>
-                  <select
-                    id="userType"
-                    name="userType"
-                    value={formData.userType}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                      errors.userType
-                        ? "border-red-300 bg-red-50"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    <option value="customer">Content creator</option>
-                    <option value="owner">Studio Partner</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                  {errors.userType && (
-                    <p className="mt-2 text-sm text-red-600">
-                      {errors.userType}
-                    </p>
-                  )}
-                </div>
+                {!isAdminLogin && (
+                  <div>
+                    <label
+                      htmlFor="userType"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      I am a
+                    </label>
+                    <select
+                      id="userType"
+                      name="userType"
+                      value={formData.userType}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
+                        errors.userType
+                          ? "border-red-300 bg-red-50"
+                          : "border-gray-300"
+                      }`}
+                    >
+                      <option value="customer">Content Creator</option>
+                      <option value="owner">Studio Partner</option>
+                    </select>
+                    {errors.userType && (
+                      <p className="mt-2 text-sm text-red-600">
+                        {errors.userType}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <button
                   type="submit"
@@ -208,17 +235,19 @@ const Login = () => {
                 </button>
               </form>
 
-              <div className="mt-8 text-center">
-                <p className="text-gray-600">
-                  Don't have an account?{" "}
-                  <Link
-                    to="/signup"
-                    className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
-                  >
-                    Create one here
-                  </Link>
-                </p>
-              </div>
+              {!isAdminLogin && (
+                <div className="mt-8 text-center">
+                  <p className="text-gray-600">
+                    Don't have an account?{" "}
+                    <Link
+                      to="/signup"
+                      className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                    >
+                      Create one here
+                    </Link>
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

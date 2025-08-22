@@ -25,6 +25,8 @@ import {
   Camera,
   Wrench,
   Info,
+  Instagram,
+  Youtube,
 } from "lucide-react";
 
 const StudioDetails = () => {
@@ -246,7 +248,7 @@ const StudioDetails = () => {
             {studio.name}
           </h1>
 
-          <div className="flex flex-wrap items-center text-gray-600 mb-6 gap-4">
+          <div className="flex flex-wrap items-center text-gray-600 mb-6 gap-x-4 gap-y-2">
             <div className="flex items-center">
               <MapPin className="h-5 w-5 mr-2 text-indigo-600" />
               <span className="text-sm lg:text-base">
@@ -273,6 +275,20 @@ const StudioDetails = () => {
                 {formatOperationalHours(studio.operationalHours)}
               </span>
             </div>
+
+            {studio.instagramUsername && (
+              <div className="flex items-center">
+                <Instagram className="h-5 w-5 mr-2 text-indigo-600" />
+                <a
+                  href={`https://www.instagram.com/${studio.instagramUsername}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm lg:text-base text-indigo-700 hover:underline"
+                >
+                  @{studio.instagramUsername}
+                </a>
+              </div>
+            )}
           </div>
 
           {isStudioOwner && (
@@ -326,7 +342,7 @@ const StudioDetails = () => {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {studio.packages &&
-                  studio.packages.map((pkg, index) => (
+                  studio.packages.map((pkg) => (
                     <div
                       key={pkg.key}
                       className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-200"
@@ -357,7 +373,7 @@ const StudioDetails = () => {
                     Add-on Services
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {studio.addons.map((addon, index) => (
+                    {studio.addons.map((addon) => (
                       <div
                         key={addon.key}
                         className="bg-gray-50 p-4 rounded-lg border border-gray-200"
@@ -392,6 +408,33 @@ const StudioDetails = () => {
                 visit contact us page and pull up the request.
               </p>
             </div>
+
+            {/* YouTube Showcase Section */}
+            {studio.youtubeLinks && studio.youtubeLinks.length > 0 && (
+              <div className="bg-white p-6 lg:p-8 rounded-xl shadow-sm border border-gray-200 mb-8">
+                <h2 className="text-2xl font-semibold mb-6 text-gray-900 flex items-center">
+                  <Youtube className="h-6 w-6 mr-3 text-red-600" />
+                  Studio Showcase
+                </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {studio.youtubeLinks.map((link, index) => (
+                    <div
+                      key={index}
+                      className="relative h-0 pb-[56.25%] overflow-hidden rounded-lg shadow-md"
+                    >
+                      <iframe
+                        className="absolute top-0 left-0 w-full h-full"
+                        src={link}
+                        title={`YouTube video player ${index + 1}`}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Reviews Section */}
             <div className="bg-white p-6 lg:p-8 rounded-xl shadow-sm border border-gray-200 mb-8">

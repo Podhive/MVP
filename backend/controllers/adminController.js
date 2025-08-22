@@ -35,7 +35,7 @@ const approveStudio = async (req, res) => {
   }
 };
 
-// DELETE /admin/bookings/:id
+// DELETE /admin/bookings/:id - FIXED
 const deleteBooking = async (req, res) => {
   if (req.user.userType !== "admin") {
     return res.status(403).json({ message: "Access denied: Admins only" });
@@ -43,21 +43,26 @@ const deleteBooking = async (req, res) => {
 
   try {
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
-    const { studio, date, slot } = booking;
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
 
-    // await booking.remove();
-    await Booking.deleteOne({ _id: booking._id });
+    // This is the availability restoration logic.
+    // It finds the availability document for the studio and date,
+    // then updates all slots where the hour matches one of the hours in the booking.
+    await Availability.updateOne(
+      { studio: booking.studio, date: booking.date },
+      { $set: { "slots.$[elem].isAvailable": true } },
+      { arrayFilters: [{ "elem.hour": { $in: booking.hours } }] }
+    );
 
-    await Availability.create({
-      studio,
-      date,
-      slot,
-      isAvailable: true,
-    });
+    // Now, delete the booking itself.
+    await Booking.deleteOne({ _id: req.params.id });
 
-    res.json({ message: "Booking deleted and slot restored" });
+    res.json({ message: "Booking deleted and slots restored" });
   } catch (error) {
+    // Add a console.log to see the actual error on the server
+    console.error("Error in deleteBooking:", error);
     res.status(500).json({ message: "Failed to delete booking" });
   }
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { createStudio } from "../../api";
 import { toast } from "react-toastify";
@@ -12,6 +12,8 @@ import {
   Package,
   Wrench,
   Trash2,
+  Youtube,
+  Instagram,
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -37,11 +39,20 @@ const DEFAULT_EQUIPMENT_OPTIONS = [
 
 const AddStudio = () => {
   const navigate = useNavigate();
+
+  // In a real app, you would get a unique ID for the logged-in user from your auth state/context.
+  const userId = "currentUser"; // Replace with your actual user identification logic.
+  const LOCAL_STORAGE_KEY = `addStudioFormData_${userId}`;
+
+  // Ref to track the initial component mount. This prevents the saving useEffect from
+  // running on the first render and overwriting existing local storage data.
+  const isInitialMount = useRef(true);
+
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    pricePerHour: "", // This will be set from the package price
+    pricePerHour: "",
     equipments: [],
     customEquipment: "",
     operationalHours: {
@@ -60,6 +71,8 @@ const AddStudio = () => {
       state: "",
       pinCode: "",
     },
+    youtubeLinks: ["", ""],
+    instagramUsername: "",
   });
 
   const [selectedImages, setSelectedImages] = useState([]);
@@ -77,6 +90,61 @@ const AddStudio = () => {
     maxQuantity: 1,
   });
 
+  // EFFECT TO LOAD SAVED DATA ON COMPONENT MOUNT
+  useEffect(() => {
+    const savedDataJSON = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!savedDataJSON) return;
+
+    try {
+      const savedData = JSON.parse(savedDataJSON);
+      const now = new Date().getTime();
+      const TWO_DAYS_IN_MS = 2 * 24 * 60 * 60 * 1000;
+
+      // Check for expiration. If expired, remove the item and do nothing.
+      if (now - savedData.timestamp > TWO_DAYS_IN_MS) {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+        return;
+      }
+
+      // Restore form state if data is valid and not expired.
+      if (savedData.formData) {
+        setFormData((prev) => ({ ...prev, ...savedData.formData }));
+      }
+      if (savedData.newAddon) {
+        setNewAddon(savedData.newAddon);
+      }
+      if (savedData.startDate) {
+        setStartDate(new Date(savedData.startDate));
+      }
+      if (savedData.endDate) {
+        setEndDate(new Date(savedData.endDate));
+      }
+    } catch (error) {
+      console.error("Error parsing or loading studio form data:", error);
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
+  }, [LOCAL_STORAGE_KEY]);
+
+  // EFFECT TO SAVE FORM DATA TO LOCAL STORAGE ON CHANGE
+  useEffect(() => {
+    // This check prevents the effect from running on the initial mount,
+    // which stops the empty initial state from overwriting the stored data.
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const dataToSave = {
+      formData,
+      newAddon,
+      startDate: startDate ? startDate.toISOString() : null,
+      endDate: endDate ? endDate.toISOString() : null,
+      timestamp: new Date().getTime(),
+    };
+
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [formData, newAddon, startDate, endDate, LOCAL_STORAGE_KEY]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -92,6 +160,15 @@ const AddStudio = () => {
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handleYoutubeLinkChange = (index, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      youtubeLinks: prev.youtubeLinks.map((link, i) =>
+        i === index ? value : link
+      ),
+    }));
   };
 
   const handleEquipmentToggle = (equipment) => {
@@ -285,7 +362,6 @@ const AddStudio = () => {
       const formDataObj = new FormData();
       formDataObj.append("name", formData.name);
       formDataObj.append("description", formData.description);
-      // Set pricePerHour from the first package
       formDataObj.append("pricePerHour", formData.packages[0].price);
       formDataObj.append("equipments", JSON.stringify(formData.equipments));
 
@@ -318,6 +394,11 @@ const AddStudio = () => {
       formDataObj.append("addons", JSON.stringify(formData.addons));
       formDataObj.append("location", JSON.stringify(formData.location));
       formDataObj.append("availability", JSON.stringify(formattedAvailability));
+      formDataObj.append(
+        "youtubeLinks",
+        JSON.stringify(formData.youtubeLinks.filter((link) => link))
+      );
+      formDataObj.append("instagramUsername", formData.instagramUsername);
 
       imageFiles.forEach((file) => {
         formDataObj.append("images", file);
@@ -327,6 +408,9 @@ const AddStudio = () => {
       toast.success(
         "Studio submitted for approval. Please wait for admin approval."
       );
+
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+
       navigate("/owner/studios");
     } catch (error) {
       console.error("Error creating studio:", error);
@@ -395,7 +479,71 @@ const AddStudio = () => {
                     placeholder="Describe your studio, its features, and what makes it special..."
                   ></textarea>
                 </div>
-                {/* Price Per Hour Input Removed */}
+              </div>
+            </div>
+
+            {/* Social Links */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center mb-6">
+                <Instagram className="h-6 w-6 text-indigo-600 mr-2" />
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Social & Video Links
+                </h2>
+              </div>
+              <div className="space-y-6">
+                <div>
+                  <label
+                    htmlFor="instagramUsername"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Instagram Username (Optional)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                      @
+                    </span>
+                    <input
+                      id="instagramUsername"
+                      name="instagramUsername"
+                      type="text"
+                      value={formData.instagramUsername}
+                      onChange={handleChange}
+                      className="w-full p-3 pl-7 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      placeholder="your_username"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    YouTube Embed Links (Optional)
+                  </label>
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <Youtube className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.youtubeLinks[0]}
+                        onChange={(e) =>
+                          handleYoutubeLinkChange(0, e.target.value)
+                        }
+                        className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="e.g., https://www.youtube.com/embed/your_video_id"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Youtube className="absolute top-3.5 left-3 h-5 w-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.youtubeLinks[1]}
+                        onChange={(e) =>
+                          handleYoutubeLinkChange(1, e.target.value)
+                        }
+                        className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                        placeholder="e.g., https://www.youtube.com/embed/your_video_id"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

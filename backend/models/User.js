@@ -15,7 +15,13 @@ const UserSchema = new Schema(
     emailOtp: { type: String },
     phoneOtp: { type: String },
     otpExpiresAt: { type: Date },
-    isVerified: { type: Boolean, default: false }, // <-- added here
+    isVerified: { type: Boolean, default: false },
+
+    // Fields for Password Reset
+    passwordResetOtp: { type: String },
+    passwordResetExpires: { type: Date },
+    passwordResetAttempts: { type: Number, default: 0 },
+    passwordChangedAt: { type: Date },
   },
   { timestamps: true }
 );
