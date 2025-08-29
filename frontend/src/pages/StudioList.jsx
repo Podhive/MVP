@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { fetchStudios, getReviewsByStudio } from "../api";
+import { fetchStudios, getReviewsByStudio, getCustomerBookings } from "../api"; // Import getCustomerBookings
+import useAuth from "../context/useAuth"; // Import useAuth to check login status
 import StudioCard from "../components/StudioCard";
 import Navbar from "../components/Navbar";
 import { Search, MapPin, Filter, SlidersHorizontal } from "lucide-react";
@@ -12,6 +13,25 @@ const StudioList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [bookedStudioIds, setBookedStudioIds] = useState(new Set()); // State for booked studios
+
+  const { isAuthenticated } = useAuth();
+
+  // Effect to fetch user's bookings
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const fetchUserBookings = async () => {
+        try {
+          const bookingsRes = await getCustomerBookings();
+          const ids = new Set(bookingsRes.data.map((b) => b.studio._id));
+          setBookedStudioIds(ids);
+        } catch (err) {
+          console.error("Failed to fetch user bookings:", err);
+        }
+      };
+      fetchUserBookings();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const getStudiosWithRatings = async () => {
@@ -21,7 +41,6 @@ const StudioList = () => {
           (studio) => studio.approved
         );
 
-        // For each studio, fetch its reviews and compute rating summary
         const studiosWithRatings = await Promise.all(
           approvedStudios.map(async (studio) => {
             try {
@@ -32,23 +51,15 @@ const StudioList = () => {
                 count > 0
                   ? reviews.reduce((sum, r) => sum + r.rating, 0) / count
                   : 0;
-
-              return {
-                ...studio,
-                ratingSummary: { average, count },
-              };
+              return { ...studio, ratingSummary: { average, count } };
             } catch (err) {
               console.warn(`Failed to fetch reviews for studio ${studio._id}`);
-              return {
-                ...studio,
-                ratingSummary: { average: 0, count: 0 },
-              };
+              return { ...studio, ratingSummary: { average: 0, count: 0 } };
             }
           })
         );
 
         setStudios(studiosWithRatings);
-        setFilteredStudios(studiosWithRatings);
       } catch (error) {
         console.error("Error fetching studios:", error);
         setError("Failed to load studios. Please try again later.");
@@ -178,9 +189,25 @@ const StudioList = () => {
           </div>
         ) : filteredStudios.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredStudios.map((studio) => (
-              <StudioCard key={studio._id} studio={studio} />
-            ))}
+            {filteredStudios.map((studio, index) => {
+              const isBooked = bookedStudioIds.has(studio._id);
+              const displayStudio = isBooked
+                ? studio
+                : {
+                    ...studio,
+                    name: `Hive Studio ${index + 1}, ${
+                      studio.location?.city || "Unknown City"
+                    }`,
+                  };
+
+              return (
+                <StudioCard
+                  key={studio._id}
+                  studio={displayStudio}
+                  isMasked={!isBooked}
+                />
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-16">

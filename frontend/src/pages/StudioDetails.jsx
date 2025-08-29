@@ -8,6 +8,7 @@ import {
   createReview,
   updateReview,
   deleteReview,
+  getCustomerBookings,
 } from "../api";
 import Navbar from "../components/Navbar";
 import StudioCarousel from "../components/StudioCarousel";
@@ -27,12 +28,13 @@ import {
   Info,
   Instagram,
   Youtube,
+  Coffee, // Icon for amenities
 } from "lucide-react";
 
 const StudioDetails = () => {
   const { studioId } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, role, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const [studio, setStudio] = useState(null);
   const [availableSlots, setAvailableSlots] = useState([]);
@@ -43,8 +45,8 @@ const StudioDetails = () => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
   const [userHasReviewed, setUserHasReviewed] = useState(false);
+  const [isBookedByUser, setIsBookedByUser] = useState(false);
 
-  // Utility function to compute and set rating summary on studio
   const updateRatingSummary = (reviewList) => {
     const totalRatings = reviewList.reduce(
       (sum, review) => sum + review.rating,
@@ -52,15 +54,11 @@ const StudioDetails = () => {
     );
     const reviewCount = reviewList.length;
     const averageRating = reviewCount ? totalRatings / reviewCount : 0;
-
     setStudio((prevStudio) =>
       prevStudio
         ? {
             ...prevStudio,
-            ratingSummary: {
-              average: averageRating,
-              count: reviewCount,
-            },
+            ratingSummary: { average: averageRating, count: reviewCount },
           }
         : null
     );
@@ -83,6 +81,13 @@ const StudioDetails = () => {
         if (isAuthenticated()) {
           const availabilityResponse = await getAvailableSlots(studioId);
           setAvailableSlots(availabilityResponse.data);
+
+          const bookingsRes = await getCustomerBookings();
+          if (
+            bookingsRes.data.some((booking) => booking.studio._id === studioId)
+          ) {
+            setIsBookedByUser(true);
+          }
         }
 
         const reviewsResponse = await getReviewsByStudio(studioId);
@@ -128,12 +133,10 @@ const StudioDetails = () => {
         await createReview(reviewData);
         toast.success("Review submitted successfully");
       }
-
       const reviewsResponse = await getReviewsByStudio(studioId);
       const updatedReviews = reviewsResponse.data;
       setReviews(updatedReviews);
       updateRatingSummary(updatedReviews);
-
       setShowReviewForm(false);
       setEditingReview(null);
       setUserHasReviewed(true);
@@ -152,12 +155,10 @@ const StudioDetails = () => {
       try {
         await deleteReview(reviewId);
         toast.success("Review deleted successfully");
-
         const reviewsResponse = await getReviewsByStudio(studioId);
         const updatedReviews = reviewsResponse.data;
         setReviews(updatedReviews);
         updateRatingSummary(updatedReviews);
-
         setUserHasReviewed(false);
       } catch (error) {
         toast.error(error.response?.data?.message || "Failed to delete review");
@@ -211,6 +212,21 @@ const StudioDetails = () => {
     )}`;
   };
 
+  const getPackageTitle = (key) => {
+    switch (key) {
+      case "No Cam":
+        return "Audio-Only";
+      case "1 Cam":
+        return "1 Camera";
+      case "2 Cam":
+        return "2 Cameras";
+      case "3 Cam":
+        return "3 Cameras";
+      default:
+        return key;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -237,26 +253,36 @@ const StudioDetails = () => {
     );
   }
 
+  const displayStudio =
+    isBookedByUser || isStudioOwner
+      ? studio
+      : {
+          ...studio,
+          name: `Hive Studio, ${studio.location?.city}`,
+          location: {
+            ...studio.location,
+            fullAddress: "Full address revealed after booking",
+            pinCode: "",
+          },
+        };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Studio Header */}
         <div className="mb-8">
           <h1 className="text-3xl lg:text-4xl font-bold mb-4 text-gray-900">
-            {studio.name}
+            {displayStudio.name}
           </h1>
-
           <div className="flex flex-wrap items-center text-gray-600 mb-6 gap-x-4 gap-y-2">
             <div className="flex items-center">
               <MapPin className="h-5 w-5 mr-2 text-indigo-600" />
               <span className="text-sm lg:text-base">
-                {studio.location?.fullAddress}, {studio.location?.city},{" "}
-                {studio.location?.state} {studio.location?.pinCode}
+                {displayStudio.location?.fullAddress},{" "}
+                {displayStudio.location?.city}, {displayStudio.location?.state}{" "}
+                {displayStudio.location?.pinCode}
               </span>
             </div>
-
             <div className="flex items-center">
               <div className="flex items-center mr-2">
                 {renderStars(studio.ratingSummary?.average)}
@@ -268,14 +294,12 @@ const StudioDetails = () => {
                 ({studio.ratingSummary?.count || 0} reviews)
               </span>
             </div>
-
             <div className="flex items-center">
               <Clock className="h-5 w-5 mr-2 text-indigo-600" />
               <span className="text-sm lg:text-base">
                 {formatOperationalHours(studio.operationalHours)}
               </span>
             </div>
-
             {studio.instagramUsername && (
               <div className="flex items-center">
                 <Instagram className="h-5 w-5 mr-2 text-indigo-600" />
@@ -290,7 +314,6 @@ const StudioDetails = () => {
               </div>
             )}
           </div>
-
           {isStudioOwner && (
             <div className="mb-4">
               <button
@@ -303,15 +326,11 @@ const StudioDetails = () => {
             </div>
           )}
         </div>
-
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           <div className="xl:col-span-2">
-            {/* Studio Images */}
             <div className="mb-8">
               <StudioCarousel images={studio.images} />
             </div>
-
-            {/* Studio Description */}
             <div className="bg-white p-6 lg:p-8 rounded-xl shadow-sm border border-gray-200 mb-8">
               <h2 className="text-2xl font-semibold mb-6 text-gray-900">
                 About This Studio
@@ -319,6 +338,26 @@ const StudioDetails = () => {
               <p className="text-gray-700 mb-8 leading-relaxed">
                 {studio.description}
               </p>
+
+              {/* Amenities Display */}
+              {studio.amenities && studio.amenities.length > 0 && (
+                <>
+                  <h3 className="text-lg font-medium mb-4 text-gray-900 flex items-center">
+                    <Coffee className="h-5 w-5 mr-2 text-indigo-600" />
+                    Amenities
+                  </h3>
+                  <div className="flex flex-wrap gap-3 mb-8">
+                    {studio.amenities.map((amenity, index) => (
+                      <span
+                        key={index}
+                        className="bg-green-50 text-green-700 px-4 py-2 rounded-full text-sm font-medium"
+                      >
+                        {amenity}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
 
               <h3 className="text-lg font-medium mb-4 text-gray-900 flex items-center">
                 <Wrench className="h-5 w-5 mr-2 text-indigo-600" />
@@ -335,12 +374,11 @@ const StudioDetails = () => {
                     </span>
                   ))}
               </div>
-
               <h3 className="text-lg font-medium mb-4 text-gray-900 flex items-center">
                 <Camera className="h-5 w-5 mr-2 text-indigo-600" />
-                Camera Packages
+                Packages
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {studio.packages &&
                   studio.packages.map((pkg) => (
                     <div
@@ -350,11 +388,7 @@ const StudioDetails = () => {
                       <div className="flex items-center mb-3">
                         <Camera className="h-5 w-5 mr-2 text-indigo-600" />
                         <span className="font-medium text-gray-900">
-                          {pkg.key === "1 Cam"
-                            ? "1 Camera"
-                            : pkg.key === "2 Cam"
-                            ? "2 Cameras"
-                            : "3 Cameras"}
+                          {getPackageTitle(pkg.key)}
                         </span>
                       </div>
                       <p className="text-2xl font-bold text-indigo-600 mb-2">
@@ -365,7 +399,6 @@ const StudioDetails = () => {
                     </div>
                   ))}
               </div>
-
               {studio.addons && studio.addons.length > 0 && (
                 <>
                   <h3 className="text-lg font-medium mb-4 mt-8 text-gray-900 flex items-center">
@@ -397,8 +430,6 @@ const StudioDetails = () => {
                   </div>
                 </>
               )}
-
-              {/* Cancellation Policy */}
               <h3 className="text-lg font-medium mb-4 mt-8 text-gray-900 flex items-center">
                 <Info className="h-5 w-5 mr-2 text-indigo-600" />
                 Cancellation Policy
@@ -408,8 +439,6 @@ const StudioDetails = () => {
                 visit contact us page and pull up the request.
               </p>
             </div>
-
-            {/* YouTube Showcase Section */}
             {studio.youtubeLinks && studio.youtubeLinks.length > 0 && (
               <div className="bg-white p-6 lg:p-8 rounded-xl shadow-sm border border-gray-200 mb-8">
                 <h2 className="text-2xl font-semibold mb-6 text-gray-900 flex items-center">
@@ -435,15 +464,12 @@ const StudioDetails = () => {
                 </div>
               </div>
             )}
-
-            {/* Reviews Section */}
             <div className="bg-white p-6 lg:p-8 rounded-xl shadow-sm border border-gray-200 mb-8">
               <ReviewList
                 reviews={reviews}
                 onEdit={handleEditReview}
                 onDelete={handleDeleteReview}
               />
-
               {isAuthenticated() && !isStudioOwner && (
                 <div className="mt-8">
                   {!userHasReviewed && !showReviewForm && (
@@ -454,7 +480,6 @@ const StudioDetails = () => {
                       Write a Review
                     </button>
                   )}
-
                   {showReviewForm && (
                     <div className="mt-6">
                       <ReviewForm
@@ -468,9 +493,7 @@ const StudioDetails = () => {
               )}
             </div>
           </div>
-
           <div className="xl:col-span-1">
-            {/* Booking Section */}
             <div className="sticky top-4">
               {isAuthenticated() ? (
                 <>
@@ -480,7 +503,6 @@ const StudioDetails = () => {
                     operationalHours={studio.operationalHours}
                     onSlotSelect={handleSlotSelect}
                   />
-
                   {selectedSlot && (
                     <div className="mt-6">
                       <BookingForm

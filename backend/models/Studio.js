@@ -51,6 +51,7 @@ const StudioSchema = new Schema(
     description: { type: String, default: "" },
     author: { type: Schema.Types.ObjectId, ref: "User", required: true },
     equipments: [{ type: String }],
+    amenities: [{ type: String }], // Added amenities field
     images: [{ type: String }],
     location: LocationSchema,
     reviews: [{ type: Schema.Types.ObjectId, ref: "Review" }],
@@ -63,7 +64,7 @@ const StudioSchema = new Schema(
       start: { type: Number, required: true, min: 0, max: 23 },
       end: { type: Number, required: true, min: 1, max: 24 },
     },
-    packages: [PackageSchema], // exactly three expected
+    packages: [PackageSchema],
     addons: [AddOnSchema], // zero or more
 
     // Fields for social links

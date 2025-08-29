@@ -14,6 +14,7 @@ import {
   Trash2,
   Youtube,
   Instagram,
+  Coffee,
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -38,6 +39,24 @@ const DEFAULT_EQUIPMENT_OPTIONS = [
   "Shock Mount (for mic stability)",
 ];
 
+const DEFAULT_AMENITIES = [
+  "Wi-Fi",
+  "Air Conditioning",
+  "Restroom",
+  "Waiting Area",
+  "Free Parking",
+  "Wheelchair Accessible",
+  "Coffee/Tea",
+  "Water Dispenser",
+  "Snacks for Purchase",
+  "Lounge Area",
+  "Changing Room",
+  "Green Screen",
+  "Teleprompter",
+  "Lighting Equipment",
+  "On-site Staff",
+];
+
 const EditStudio = () => {
   const { studioId } = useParams();
   const navigate = useNavigate();
@@ -51,16 +70,13 @@ const EditStudio = () => {
     description: "",
     pricePerHour: "",
     equipments: [],
+    amenities: [],
     customEquipment: "",
     operationalHours: {
       start_time: "09:00",
       end_time: "18:00",
     },
-    packages: [
-      { key: "1 Cam", price: "", description: "Basic single camera setup" },
-      { key: "2 Cam", price: "", description: "Dual camera angles" },
-      { key: "3 Cam", price: "", description: "Full setup with 3 cameras" },
-    ],
+    packages: [],
     addons: [],
     location: {
       fullAddress: "",
@@ -72,6 +88,7 @@ const EditStudio = () => {
     instagramUsername: "",
   });
 
+  const [customAmenity, setCustomAmenity] = useState("");
   const [existingImages, setExistingImages] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
@@ -144,11 +161,34 @@ const EditStudio = () => {
 
         const youtubeLinks = foundStudio.youtubeLinks || [];
 
+        const packageKeys = ["No Cam", "1 Cam", "2 Cam", "3 Cam"];
+        const defaultPackages = [
+          { key: "No Cam", price: "", description: "Audio only recording" },
+          {
+            key: "1 Cam",
+            price: "",
+            description: "Basic single camera setup",
+          },
+          { key: "2 Cam", price: "", description: "Dual camera angles" },
+          {
+            key: "3 Cam",
+            price: "",
+            description: "Full setup with 3 cameras",
+          },
+        ];
+
+        const studioPackages = foundStudio.packages || [];
+        const mergedPackages = packageKeys.map((key) => {
+          const existingPkg = studioPackages.find((p) => p.key === key);
+          return existingPkg || defaultPackages.find((dp) => dp.key === key);
+        });
+
         setFormData({
           name: foundStudio.name || "",
           description: foundStudio.description || "",
           pricePerHour: foundStudio.pricePerHour || "",
           equipments: foundStudio.equipments || [],
+          amenities: foundStudio.amenities || [],
           customEquipment: "",
           operationalHours: {
             start_time: foundStudio.operationalHours?.start
@@ -164,19 +204,7 @@ const EditStudio = () => {
                 )}:00`
               : "18:00",
           },
-          packages: foundStudio.packages || [
-            {
-              key: "1 Cam",
-              price: "",
-              description: "Basic single camera setup",
-            },
-            { key: "2 Cam", price: "", description: "Dual camera angles" },
-            {
-              key: "3 Cam",
-              price: "",
-              description: "Full setup with 3 cameras",
-            },
-          ],
+          packages: mergedPackages,
           addons: foundStudio.addons || [],
           location: {
             fullAddress: foundStudio.location?.fullAddress || "",
@@ -234,6 +262,35 @@ const EditStudio = () => {
     }));
   };
 
+  const handleAmenityToggle = (amenity) => {
+    setFormData((prev) => ({
+      ...prev,
+      amenities: prev.amenities.includes(amenity)
+        ? prev.amenities.filter((am) => am !== amenity)
+        : [...prev.amenities, amenity],
+    }));
+  };
+
+  const handleAddCustomAmenity = () => {
+    if (
+      customAmenity.trim() !== "" &&
+      !formData.amenities.includes(customAmenity.trim())
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        amenities: [...prev.amenities, customAmenity.trim()],
+      }));
+      setCustomAmenity("");
+    }
+  };
+
+  const handleRemoveAmenity = (amenity) => {
+    setFormData((prev) => ({
+      ...prev,
+      amenities: prev.amenities.filter((am) => am !== amenity),
+    }));
+  };
+
   const handleAddCustomEquipment = () => {
     if (formData.customEquipment.trim() !== "") {
       setFormData((prev) => ({
@@ -261,43 +318,33 @@ const EditStudio = () => {
   };
 
   const handleAddAddon = () => {
-    // Trim whitespace from inputs to ensure fields aren't just spaces
-    const trimmedKey = newAddon.key.trim(); //
-    const trimmedName = newAddon.name.trim(); //
+    const trimmedKey = newAddon.key.trim();
+    const trimmedName = newAddon.name.trim();
 
-    // More explicit validation check for required fields
     if (trimmedKey && trimmedName && newAddon.price) {
-      //
       setFormData((prev) => ({
-        //
-        ...prev, //
+        ...prev,
         addons: [
-          //
-          ...prev.addons, //
-          // Create a new object explicitly to ensure structure matches the schema
+          ...prev.addons,
           {
-            key: trimmedKey, //
-            name: trimmedName, //
-            price: parseFloat(newAddon.price), //
-            description: newAddon.description.trim(), //
-            maxQuantity: newAddon.maxQuantity, //
+            key: trimmedKey,
+            name: trimmedName,
+            price: parseFloat(newAddon.price),
+            description: newAddon.description.trim(),
+            maxQuantity: newAddon.maxQuantity,
           },
         ],
       }));
-      // Reset form for the next entry
       setNewAddon({
-        //
-        key: "", //
-        name: "", //
-        price: "", //
-        description: "", //
-        maxQuantity: 1, //
+        key: "",
+        name: "",
+        price: "",
+        description: "",
+        maxQuantity: 1,
       });
     } else {
-      // Provide feedback to the user if validation fails
       toast.error(
-        //
-        "Please provide a valid Key, Name, and Price for the add-on service." //
+        "Please provide a valid Key, Name, and Price for the add-on service."
       );
     }
   };
@@ -422,8 +469,11 @@ const EditStudio = () => {
       toast.error("Studio name is required");
       return;
     }
-    if (!formData.packages.every((pkg) => pkg.price)) {
-      toast.error("All package prices are required");
+    const requiredPackages = formData.packages.filter(
+      (p) => p.key !== "No Cam"
+    );
+    if (!requiredPackages.every((pkg) => pkg.price)) {
+      toast.error("Prices for 1, 2, and 3 Cam packages are required");
       return;
     }
     if (
@@ -448,11 +498,20 @@ const EditStudio = () => {
         slots: day.slots,
       }));
 
+      const finalPackages = formData.packages.filter(
+        (pkg) => pkg.price && parseFloat(pkg.price) > 0
+      );
+
+      // **BUG FIX: Calculate minimum price from valid packages**
+      const prices = finalPackages.map((p) => parseFloat(p.price));
+      const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+
       const formDataObj = new FormData();
       formDataObj.append("name", formData.name);
       formDataObj.append("description", formData.description);
-      formDataObj.append("pricePerHour", formData.packages[0].price);
+      formDataObj.append("pricePerHour", minPrice); // Use calculated min price
       formDataObj.append("equipments", JSON.stringify(formData.equipments));
+      formDataObj.append("amenities", JSON.stringify(formData.amenities));
 
       const startHour = parseInt(
         formData.operationalHours.start_time.split(":")[0],
@@ -474,7 +533,7 @@ const EditStudio = () => {
       formDataObj.append(
         "packages",
         JSON.stringify(
-          formData.packages.map((pkg) => ({
+          finalPackages.map((pkg) => ({
             ...pkg,
             price: parseFloat(pkg.price),
           }))
@@ -504,6 +563,21 @@ const EditStudio = () => {
       toast.error(error.response?.data?.message || "Failed to update studio");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const getPackageTitle = (key) => {
+    switch (key) {
+      case "No Cam":
+        return "Audio-Only Package (Optional)";
+      case "1 Cam":
+        return "1 Camera Setup (Base Price)";
+      case "2 Cam":
+        return "2 Camera Setup";
+      case "3 Cam":
+        return "3 Camera Setup";
+      default:
+        return "Package";
     }
   };
 
@@ -696,6 +770,85 @@ const EditStudio = () => {
               </div>
             </div>
 
+            {/* Amenities Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center mb-6">
+                <Coffee className="h-6 w-6 text-indigo-600 mr-2" />
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Amenities
+                </h2>
+              </div>
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Select Available Amenities
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {DEFAULT_AMENITIES.map((amenity) => (
+                    <label
+                      key={amenity}
+                      className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.amenities.includes(amenity)}
+                        onChange={() => handleAmenityToggle(amenity)}
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <span className="ml-3 text-sm text-gray-700">
+                        {amenity}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="mb-4">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Add Custom Amenity
+                </h3>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={customAmenity}
+                    onChange={(e) => setCustomAmenity(e.target.value)}
+                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    placeholder="Enter custom amenity name"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomAmenity}
+                    className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors flex items-center"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Add
+                  </button>
+                </div>
+              </div>
+              {formData.amenities.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">
+                    Selected Amenities
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.amenities.map((amenity, index) => (
+                      <div
+                        key={index}
+                        className="bg-indigo-50 text-indigo-700 px-3 py-2 rounded-full flex items-center text-sm"
+                      >
+                        <span className="mr-2">{amenity}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAmenity(amenity)}
+                          className="text-indigo-500 hover:text-indigo-700 transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Equipment */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center mb-6">
@@ -799,16 +952,12 @@ const EditStudio = () => {
                     className="p-4 border border-gray-200 rounded-lg"
                   >
                     <h3 className="text-lg font-medium text-gray-900 mb-4">
-                      {pkg.key === "1 Cam"
-                        ? "1 Camera Setup (Base Price)"
-                        : pkg.key === "2 Cam"
-                        ? "2 Camera Setup"
-                        : "3 Camera Setup"}
+                      {getPackageTitle(pkg.key)}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Price per Hour (₹) *
+                          Price per Hour (₹) {pkg.key !== "No Cam" && "*"}
                         </label>
                         <input
                           type="number"
@@ -817,7 +966,7 @@ const EditStudio = () => {
                           onChange={(e) =>
                             handlePackageChange(index, "price", e.target.value)
                           }
-                          required
+                          required={pkg.key !== "No Cam"}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                           placeholder="Enter price"
                         />
@@ -846,6 +995,7 @@ const EditStudio = () => {
               </div>
             </div>
 
+            {/* Add-ons, Location, Availability, Images sections remain the same */}
             {/* Add-ons */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center mb-6">

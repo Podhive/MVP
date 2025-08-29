@@ -50,6 +50,7 @@ const uploadImages = async (files) => {
 // Parse JSON fields from multipart/form-data
 const parseJsonFields = (body) => ({
   equipments: body.equipments ? JSON.parse(body.equipments) : [],
+  amenities: body.amenities ? JSON.parse(body.amenities) : [], // Added amenities
   packages: body.packages ? JSON.parse(body.packages) : [],
   addons: body.addons ? JSON.parse(body.addons) : [],
   location: body.location ? JSON.parse(body.location) : {},
@@ -66,6 +67,7 @@ const addStudio = async (req, res) => {
     const { name, description, pricePerHour, instagramUsername } = req.body;
     const {
       equipments,
+      amenities, // Destructure amenities
       packages,
       addons,
       location,
@@ -81,6 +83,7 @@ const addStudio = async (req, res) => {
       description,
       author: req.user._id,
       equipments,
+      amenities, // Add amenities to new studio
       images: uploadedImages,
       location,
       operationalHours,
@@ -115,64 +118,52 @@ const addStudio = async (req, res) => {
 
 const getStudios = async (req, res) => {
   try {
-    // 1. Fetch all approved studios first.
     const studios = await Studio.find({ approved: true });
 
     if (!studios.length) {
       return res.json([]);
     }
-
-    // --- TIMEZONE-AWARE LOGIC ---
-    // Assuming the server is configured for the IST timezone.
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Start of today (00:00:00)
-    const currentHour = now.getHours(); // Current hour (0-23)
-    // --- END ---
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const currentHour = now.getHours();
 
     const studioIds = studios.map((s) => s._id);
 
-    // 2. Fetch and filter availability for all studios in a single, efficient database query.
     const filteredSlots = await Availability.aggregate([
       {
-        // Match availability for the relevant studios and from today onwards.
         $match: {
           studio: { $in: studioIds },
           date: { $gte: today },
         },
       },
       {
-        // Deconstruct the slots array to process each slot.
         $unwind: "$slots",
       },
       {
-        // Filter for slots that are actually available.
         $match: {
           "slots.isAvailable": true,
         },
       },
       {
-        // THE CORE FIX: Filter out past hours for the current day.
         $match: {
           $or: [
-            { date: { $gt: today } }, // Keep if the date is in the future.
+            { date: { $gt: today } },
             {
               $and: [
-                { date: { $eq: today } }, // OR if the date is today...
-                { "slots.hour": { $gte: currentHour } }, // ...and the hour has not passed yet.
+                { date: { $eq: today } },
+                { "slots.hour": { $gte: currentHour } },
               ],
             },
           ],
         },
       },
       {
-        // Group the valid slots back together by their original studio and date.
         $group: {
           _id: { studio: "$studio", date: "$date" },
           slots: { $push: "$slots" },
         },
       },
       {
-        // Now, group all the date documents by studio ID.
         $group: {
           _id: "$_id.studio",
           availability: {
@@ -185,16 +176,14 @@ const getStudios = async (req, res) => {
       },
     ]);
 
-    // 3. Create a map for easy lookup (Studio ID => Availability Array).
     const slotMap = filteredSlots.reduce((acc, item) => {
       acc[item._id.toString()] = item.availability;
       return acc;
     }, {});
 
-    // 4. Combine the studio data with its filtered availability.
     const studiosWithAvailability = studios.map((studio) => ({
       ...studio.toObject(),
-      availability: slotMap[studio._id.toString()] || [], // Use filtered availability or an empty array
+      availability: slotMap[studio._id.toString()] || [],
       ratingSummary: studio.ratingSummary || { average: 0, count: 0 },
     }));
 
@@ -220,6 +209,7 @@ const updateStudio = async (req, res) => {
     const { name, description, pricePerHour, instagramUsername } = req.body;
     const {
       equipments,
+      amenities, // Destructure amenities
       packages,
       addons,
       location,
@@ -229,23 +219,21 @@ const updateStudio = async (req, res) => {
       existingImages,
     } = parseJsonFields(req.body);
 
-    // Image handling
     const newImages = req.files?.length ? await uploadImages(req.files) : [];
     studio.images = [...existingImages, ...newImages];
 
-    // Update studio fields
     studio.name = name;
     studio.description = description;
     studio.pricePerHour = parseFloat(pricePerHour);
     studio.instagramUsername = instagramUsername;
     studio.equipments = equipments;
+    studio.amenities = amenities; // Update amenities
     studio.packages = packages;
     studio.addons = addons;
     studio.location = location;
     studio.operationalHours = operationalHours;
     studio.youtubeLinks = youtubeLinks;
 
-    // --- ROBUST AVAILABILITY UPDATE ---
     if (availability && Array.isArray(availability)) {
       const bulkOps = availability.map((day) => ({
         updateOne: {
@@ -258,7 +246,6 @@ const updateStudio = async (req, res) => {
         await Availability.bulkWrite(bulkOps);
       }
     }
-    // --- END OF FIX ---
 
     const updatedStudio = await studio.save();
     return res.json(updatedStudio);

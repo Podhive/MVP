@@ -2,27 +2,26 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Star, MapPin, Mic } from "lucide-react";
 
-const StudioCard = ({ studio }) => {
+const StudioCard = ({ studio, isMasked }) => {
   const { _id, name, images, location, ratingSummary } = studio;
 
-  // Get the lowest price from pricing
   const pricePerHour = studio.pricePerHour;
 
-  // Render stars based on average rating
   const renderStars = () => {
     const stars = [];
     const rating = ratingSummary?.average || 0;
-
     for (let i = 1; i <= 5; i++) {
-      if (i <= rating) {
-        stars.push(
-          <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-        );
-      } else {
-        stars.push(<Star key={i} className="h-4 w-4 text-gray-300" />);
-      }
+      stars.push(
+        <Star
+          key={i}
+          className={
+            i <= rating
+              ? "h-4 w-4 fill-yellow-400 text-yellow-400"
+              : "h-4 w-4 text-gray-300"
+          }
+        />
+      );
     }
-
     return stars;
   };
 
@@ -51,7 +50,9 @@ const StudioCard = ({ studio }) => {
         <div className="flex items-center text-gray-600 mb-3">
           <MapPin className="h-4 w-4 mr-2 text-indigo-500" />
           <span className="text-sm">
-            {location?.city || "Location not specified"}
+            {isMasked
+              ? "Location revealed after booking"
+              : location?.city || "Location not specified"}
           </span>
         </div>
 
