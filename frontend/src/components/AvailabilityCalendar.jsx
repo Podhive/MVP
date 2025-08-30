@@ -5,57 +5,85 @@ import { format, isSameDay, parseISO, isToday } from "date-fns";
 
 const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedHours, setSelectedHours] = useState([]);
+  const [startTime, setStartTime] = useState(""); // Use a string to handle the default empty state of the select
+  const [duration, setDuration] = useState(0); // Set initial duration state to 0
   const [selectedPackage, setSelectedPackage] = useState(null);
 
   // Memoize the array of available dates so it's not recalculated on every render.
-  // This uses the `includeDates` prop for better performance in the DatePicker.
   const availableDates = useMemo(() => {
-    // The backend sends dates in ISO format (e.g., "2025-08-23T00:00:00.000Z").
-    // We parse them into Date objects for the DatePicker.
     return availableSlots.map((slot) => parseISO(slot.date));
   }, [availableSlots]);
 
   // Find the available hours for the date the user has selected.
-  const availableHoursForSelectedDate = useMemo(() => {
+  const availableStartTimes = useMemo(() => {
     if (!selectedDate || !availableSlots) {
       return [];
     }
-    // Find the data object for the selected date.
-    // `isSameDay` provides a robust comparison, ignoring time-of-day differences.
     const todaysData = availableSlots.find((day) =>
       isSameDay(parseISO(day.date), selectedDate)
     );
 
     if (todaysData && todaysData.hours) {
-      // ✅ THE FIX: If the selected date is today, filter out past hours.
+      // Sort the hours numerically before any filtering
+      const sortedHours = [...todaysData.hours].sort((a, b) => a - b);
+
+      // If the selected date is today, filter out past hours.
       if (isToday(selectedDate)) {
         const currentHour = new Date().getHours();
-        return todaysData.hours
-          .filter((hour) => hour >= currentHour)
-          .sort((a, b) => a - b);
+        return sortedHours.filter((hour) => hour > currentHour);
       }
-      // For any future date, return all available hours.
-      return [...todaysData.hours].sort((a, b) => a - b);
+      return sortedHours;
     }
 
     return [];
   }, [selectedDate, availableSlots]);
 
+  // Calculate the maximum consecutive hours available from the selected start time.
+  const availableDurations = useMemo(() => {
+    if (!startTime) return [];
+
+    const start = parseInt(startTime, 10);
+    const startIndex = availableStartTimes.indexOf(start);
+    if (startIndex === -1) return [];
+
+    let maxDuration = 1;
+    for (let i = startIndex + 1; i < availableStartTimes.length; i++) {
+      if (availableStartTimes[i] === availableStartTimes[i - 1] + 1) {
+        maxDuration++;
+      } else {
+        break;
+      }
+    }
+
+    // Return an array of numbers from 1 to maxDuration, e.g., [1, 2, 3]
+    return Array.from({ length: maxDuration }, (_, i) => i + 1);
+  }, [startTime, availableStartTimes]);
+
+  // Derive the final selected hours based on start time and duration
+  const selectedHours = useMemo(() => {
+    if (!startTime || duration === 0) return []; // Return empty if duration is 0
+    const start = parseInt(startTime, 10);
+    // Generate an array of consecutive hours
+    return Array.from({ length: duration }, (_, i) => start + i);
+  }, [startTime, duration]);
+
   const handleDateChange = (date) => {
     setSelectedDate(date);
-    setSelectedHours([]);
+    setStartTime("");
+    setDuration(0); // Reset duration to 0 when date changes
     setSelectedPackage(null);
   };
 
-  const handleHourToggle = (hour) => {
-    setSelectedHours((prev) => {
-      if (prev.includes(hour)) {
-        return prev.filter((h) => h !== hour);
-      } else {
-        return [...prev, hour].sort((a, b) => a - b);
-      }
-    });
+  const handleStartTimeChange = (e) => {
+    const newStartTime = e.target.value;
+    setStartTime(newStartTime);
+    setDuration(1); // Reset duration to 1 when a start time is chosen
+    setSelectedPackage(null); // Reset package selection
+  };
+
+  const handleDurationChange = (e) => {
+    setDuration(parseInt(e.target.value, 10));
+    setSelectedPackage(null); // Reset package selection
   };
 
   const handlePackageSelect = (packageKey) => {
@@ -84,9 +112,9 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
   };
 
   const formatHour = (hour) => {
-    const period = hour >= 12 ? "PM" : "AM";
-    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-    return `${displayHour}:00 ${period}`;
+    const date = new Date();
+    date.setHours(hour, 0, 0, 0);
+    return format(date, "h:00 a"); // e.g., "1:00 PM"
   };
 
   return (
@@ -97,10 +125,14 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
 
       {/* Date Selection */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label
+          htmlFor="date-picker"
+          className="block text-sm font-medium text-gray-700 mb-2"
+        >
           Choose Date
         </label>
         <DatePicker
+          id="date-picker"
           selected={selectedDate}
           onChange={handleDateChange}
           includeDates={availableDates}
@@ -111,39 +143,69 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
         />
       </div>
 
-      {/* Hour Selection */}
+      {/* Time Selection */}
       {selectedDate && (
-        <div className="mb-6">
-          <h4 className="font-medium mb-3 text-gray-900">
-            Available Hours for {format(selectedDate, "MMMM d, yyyy")}
-          </h4>
-
-          {availableHoursForSelectedDate.length > 0 ? (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {availableHoursForSelectedDate.map((hour) => (
-                <button
-                  key={hour}
-                  onClick={() => handleHourToggle(hour)}
-                  className={`p-2 text-sm rounded-lg border transition-all ${
-                    selectedHours.includes(hour)
-                      ? "bg-indigo-600 text-white border-indigo-600"
-                      : "bg-white text-gray-700 border-gray-300 hover:border-indigo-300 hover:bg-indigo-50"
-                  }`}
-                >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Start Time Dropdown */}
+          <div>
+            <label
+              htmlFor="start-time"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Start Time
+            </label>
+            <select
+              id="start-time"
+              value={startTime}
+              onChange={handleStartTimeChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+              disabled={availableStartTimes.length === 0}
+            >
+              <option value="" disabled>
+                {availableStartTimes.length > 0
+                  ? "Start time"
+                  : "No slots available"}
+              </option>
+              {availableStartTimes.map((hour) => (
+                <option key={hour} value={hour}>
                   {formatHour(hour)}
-                </button>
+                </option>
               ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-sm">
-              No available hours for this date.
-            </p>
-          )}
+            </select>
+          </div>
+
+          {/* Duration Dropdown */}
+          <div>
+            <label
+              htmlFor="duration"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Duration
+            </label>
+            <select
+              id="duration"
+              value={duration}
+              onChange={handleDurationChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+              disabled={!startTime}
+            >
+              {/* Conditionally render placeholder or actual durations */}
+              {!startTime ? (
+                <option value="0">0 hour</option>
+              ) : (
+                availableDurations.map((d) => (
+                  <option key={d} value={d}>
+                    {d} hour{d > 1 ? "s" : ""}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
         </div>
       )}
 
       {/* Package Selection */}
-      {selectedHours.length > 0 && (
+      {startTime && (
         <div className="mb-6">
           <h4 className="font-medium mb-3 text-gray-900">Select Package</h4>
           <div className="space-y-3">
@@ -153,7 +215,7 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
                 onClick={() => handlePackageSelect(pkg.key)}
                 className={`p-4 rounded-lg border cursor-pointer transition-all ${
                   selectedPackage === pkg.key
-                    ? "border-indigo-500 bg-indigo-50"
+                    ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200"
                     : "border-gray-200 hover:border-indigo-300 hover:bg-gray-50"
                 }`}
               >
@@ -166,7 +228,7 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
                       {pkg.description}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex-shrink-0 ml-4">
                     <span className="text-lg font-bold text-indigo-600">
                       ₹{pkg.price}
                     </span>
@@ -180,40 +242,40 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
       )}
 
       {/* Selection Summary & Confirm Button */}
-      {selectedDate && selectedHours.length > 0 && selectedPackage && (
+      {selectedDate && startTime && selectedPackage && (
         <>
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-medium mb-2 text-gray-900">
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h4 className="font-medium mb-3 text-gray-900">
               Selection Summary
             </h4>
-            <div className="text-sm text-gray-600 space-y-1">
+            <div className="text-sm text-gray-700 space-y-2">
               <p>
-                <span className="font-medium">Date:</span>{" "}
+                <span className="font-medium text-gray-900">Date:</span>{" "}
                 {format(selectedDate, "MMMM d, yyyy")}
               </p>
               <p>
-                <span className="font-medium">Hours:</span>{" "}
-                {selectedHours.map((h) => formatHour(h)).join(", ")}
+                <span className="font-medium text-gray-900">Time Slots:</span>{" "}
+                {selectedHours.map((h) => formatHour(h)).join(" → ")}
               </p>
               <p>
-                <span className="font-medium">Duration:</span>{" "}
-                {selectedHours.length} hour{selectedHours.length > 1 ? "s" : ""}
+                <span className="font-medium text-gray-900">Duration:</span>{" "}
+                {duration} hour{duration > 1 ? "s" : ""}
               </p>
               <p>
-                <span className="font-medium">Package:</span>{" "}
+                <span className="font-medium text-gray-900">Package:</span>{" "}
                 {packages.find((p) => p.key === selectedPackage)?.name ||
                   selectedPackage}
               </p>
-              <p>
-                <span className="font-medium">Base Price:</span> ₹
+              <p className="font-bold text-lg text-gray-900 mt-2 pt-2 border-t border-gray-200">
+                <span className="font-medium">Total Price:</span> ₹
                 {packages.find((p) => p.key === selectedPackage)?.price *
-                  selectedHours.length}
+                  duration}
               </p>
             </div>
           </div>
           <button
             onClick={handleConfirmSelection}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all font-medium shadow-sm"
+            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all font-medium shadow-lg hover:shadow-indigo-300/50 focus:outline-none focus:ring-4 focus:ring-indigo-300"
           >
             Continue to Add-ons & Booking
           </button>
@@ -221,7 +283,7 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
       )}
 
       {!selectedDate && (
-        <p className="text-gray-500 text-sm">
+        <p className="text-center text-gray-500 text-sm mt-4">
           Please select a date to view available time slots.
         </p>
       )}
