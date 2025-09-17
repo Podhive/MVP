@@ -1,20 +1,23 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { format, isSameDay, parseISO, isToday } from "date-fns";
 
-const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
+const AvailabilityCalendar = ({
+  availableSlots,
+  packages,
+  onSlotSelect,
+  minimumDurationHours,
+}) => {
   const [selectedDate, setSelectedDate] = useState(null);
-  const [startTime, setStartTime] = useState(""); // Use a string to handle the default empty state of the select
-  const [duration, setDuration] = useState(0); // Set initial duration state to 0
+  const [startTime, setStartTime] = useState("");
+  const [duration, setDuration] = useState(0);
   const [selectedPackage, setSelectedPackage] = useState(null);
 
-  // Memoize the array of available dates so it's not recalculated on every render.
   const availableDates = useMemo(() => {
     return availableSlots.map((slot) => parseISO(slot.date));
   }, [availableSlots]);
 
-  // Find the available hours for the date the user has selected.
   const availableStartTimes = useMemo(() => {
     if (!selectedDate || !availableSlots) {
       return [];
@@ -24,10 +27,8 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
     );
 
     if (todaysData && todaysData.hours) {
-      // Sort the hours numerically before any filtering
       const sortedHours = [...todaysData.hours].sort((a, b) => a - b);
 
-      // If the selected date is today, filter out past hours.
       if (isToday(selectedDate)) {
         const currentHour = new Date().getHours();
         return sortedHours.filter((hour) => hour > currentHour);
@@ -38,7 +39,6 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
     return [];
   }, [selectedDate, availableSlots]);
 
-  // Calculate the maximum consecutive hours available from the selected start time.
   const availableDurations = useMemo(() => {
     if (!startTime) return [];
 
@@ -55,35 +55,49 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
       }
     }
 
-    // Return an array of numbers from 1 to maxDuration, e.g., [1, 2, 3]
-    return Array.from({ length: maxDuration }, (_, i) => i + 1);
-  }, [startTime, availableStartTimes]);
+    const allDurations = Array.from({ length: maxDuration }, (_, i) => i + 1);
+    // This filter correctly ensures options are not smaller than the minimum
+    return allDurations.filter((d) => d >= (minimumDurationHours || 1));
+  }, [startTime, availableStartTimes, minimumDurationHours]);
 
-  // Derive the final selected hours based on start time and duration
+  // FIXED: This effect ensures the duration state is correctly updated
+  // when the list of available durations changes (e.g., after picking a start time).
+  useEffect(() => {
+    if (availableDurations.length > 0) {
+      // If the currently selected duration isn't valid anymore,
+      // or if no duration is set, default to the first valid option.
+      if (!availableDurations.includes(duration)) {
+        setDuration(availableDurations[0]);
+      }
+    } else {
+      // If no durations are available, reset to 0.
+      setDuration(0);
+    }
+  }, [availableDurations, duration]);
+
   const selectedHours = useMemo(() => {
-    if (!startTime || duration === 0) return []; // Return empty if duration is 0
+    if (!startTime || duration === 0) return [];
     const start = parseInt(startTime, 10);
-    // Generate an array of consecutive hours
     return Array.from({ length: duration }, (_, i) => start + i);
   }, [startTime, duration]);
 
   const handleDateChange = (date) => {
     setSelectedDate(date);
     setStartTime("");
-    setDuration(0); // Reset duration to 0 when date changes
+    setDuration(0);
     setSelectedPackage(null);
   };
 
+  // MODIFIED: Simplified the handler to let the useEffect manage the duration
   const handleStartTimeChange = (e) => {
     const newStartTime = e.target.value;
     setStartTime(newStartTime);
-    setDuration(1); // Reset duration to 1 when a start time is chosen
-    setSelectedPackage(null); // Reset package selection
+    setSelectedPackage(null);
   };
 
   const handleDurationChange = (e) => {
     setDuration(parseInt(e.target.value, 10));
-    setSelectedPackage(null); // Reset package selection
+    setSelectedPackage(null);
   };
 
   const handlePackageSelect = (packageKey) => {
@@ -114,7 +128,7 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
   const formatHour = (hour) => {
     const date = new Date();
     date.setHours(hour, 0, 0, 0);
-    return format(date, "h:00 a"); // e.g., "1:00 PM"
+    return format(date, "h:00 a");
   };
 
   return (
@@ -123,7 +137,6 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
         Select Date & Time
       </h3>
 
-      {/* Date Selection */}
       <div className="mb-6">
         <label
           htmlFor="date-picker"
@@ -143,10 +156,8 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
         />
       </div>
 
-      {/* Time Selection */}
       {selectedDate && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* Start Time Dropdown */}
           <div>
             <label
               htmlFor="start-time"
@@ -174,7 +185,6 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
             </select>
           </div>
 
-          {/* Duration Dropdown */}
           <div>
             <label
               htmlFor="duration"
@@ -187,24 +197,24 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
               value={duration}
               onChange={handleDurationChange}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
-              disabled={!startTime}
+              disabled={!startTime || availableDurations.length === 0}
             >
-              {/* Conditionally render placeholder or actual durations */}
               {!startTime ? (
-                <option value="0">0 hour</option>
-              ) : (
+                <option value="0">Select start time</option>
+              ) : availableDurations.length > 0 ? (
                 availableDurations.map((d) => (
                   <option key={d} value={d}>
                     {d} hour{d > 1 ? "s" : ""}
                   </option>
                 ))
+              ) : (
+                <option value="0">Not enough time</option>
               )}
             </select>
           </div>
         </div>
       )}
 
-      {/* Package Selection */}
       {startTime && (
         <div className="mb-6">
           <h4 className="font-medium mb-3 text-gray-900">Select Package</h4>
@@ -241,8 +251,7 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
         </div>
       )}
 
-      {/* Selection Summary & Confirm Button */}
-      {selectedDate && startTime && selectedPackage && (
+      {selectedDate && startTime && selectedPackage && duration > 0 && (
         <>
           <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h4 className="font-medium mb-3 text-gray-900">
@@ -275,7 +284,7 @@ const AvailabilityCalendar = ({ availableSlots, packages, onSlotSelect }) => {
           </div>
           <button
             onClick={handleConfirmSelection}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all font-medium shadow-lg hover:shadow-indigo-300/50 focus:outline-none focus:ring-4 focus:ring-indigo-300"
+            className="w-full bg-indigo-900 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all font-medium shadow-lg hover:shadow-indigo-300/50 focus:outline-none focus:ring-4 focus:ring-indigo-300"
           >
             Continue to Add-ons & Booking
           </button>

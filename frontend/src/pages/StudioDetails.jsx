@@ -16,6 +16,7 @@ import AvailabilityCalendar from "../components/AvailabilityCalendar";
 import BookingForm from "../components/BookingForm";
 import ReviewList from "../components/ReviewList";
 import ReviewForm from "../components/ReviewForm";
+import ImageLightbox from "../components/ImageLightbox";
 import useAuth from "../context/useAuth";
 import {
   Star,
@@ -28,7 +29,10 @@ import {
   Info,
   Instagram,
   Youtube,
-  Coffee, // Icon for amenities
+  Coffee,
+  ChevronDown,
+  Square,
+  FileText,
 } from "lucide-react";
 
 const StudioDetails = () => {
@@ -46,6 +50,35 @@ const StudioDetails = () => {
   const [editingReview, setEditingReview] = useState(null);
   const [userHasReviewed, setUserHasReviewed] = useState(false);
   const [isBookedByUser, setIsBookedByUser] = useState(false);
+  const [isAmenitiesOpen, setIsAmenitiesOpen] = useState(false);
+  const [isEquipmentOpen, setIsEquipmentOpen] = useState(false);
+  const [isAreaOpen, setIsAreaOpen] = useState(false); // New state for Area section
+  const [isCancellationPolicyOpen, setIsCancellationPolicyOpen] =
+    useState(false);
+  const [isRulesOpen, setIsRulesOpen] = useState(false);
+
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const handleOpenLightbox = (index) => {
+    setCurrentImageIndex(index);
+    setIsLightboxOpen(true);
+  };
+
+  const handleCloseLightbox = () => {
+    setIsLightboxOpen(false);
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % studio.images.length);
+  };
+
+  const handlePrevImage = () => {
+    setCurrentImageIndex(
+      (prevIndex) =>
+        (prevIndex - 1 + studio.images.length) % studio.images.length
+    );
+  };
 
   const updateRatingSummary = (reviewList) => {
     const totalRatings = reviewList.reduce(
@@ -67,6 +100,7 @@ const StudioDetails = () => {
   useEffect(() => {
     const fetchStudioData = async () => {
       try {
+        setLoading(true);
         const studiosResponse = await fetchStudios();
         const foundStudio = studiosResponse.data.find(
           (s) => s._id === studioId
@@ -83,8 +117,12 @@ const StudioDetails = () => {
           setAvailableSlots(availabilityResponse.data);
 
           const bookingsRes = await getCustomerBookings();
+          // ✅ Robust check for bookings with potentially deleted studios
           if (
-            bookingsRes.data.some((booking) => booking.studio._id === studioId)
+            bookingsRes.data.some(
+              (booking) =>
+                booking && booking.studio && booking.studio._id === studioId
+            )
           ) {
             setIsBookedByUser(true);
           }
@@ -97,7 +135,11 @@ const StudioDetails = () => {
 
         if (
           user &&
-          fetchedReviews.some((review) => review.reviewer?._id === user._id)
+          // ✅ More robust check for existing review
+          fetchedReviews.some(
+            (review) =>
+              review && review.reviewer && review.reviewer._id === user._id
+          )
         ) {
           setUserHasReviewed(true);
         }
@@ -169,8 +211,9 @@ const StudioDetails = () => {
   const isStudioOwner =
     studio &&
     user &&
-    (typeof studio.author === "object" ? studio.author._id : studio.author) ===
-      user._id;
+    (studio.author && typeof studio.author === "object"
+      ? studio.author._id
+      : studio.author) === user._id;
 
   const renderStars = (rating) => {
     const stars = [];
@@ -215,7 +258,7 @@ const StudioDetails = () => {
   const getPackageTitle = (key) => {
     switch (key) {
       case "No Cam":
-        return "Audio-Only";
+        return "No Camera";
       case "1 Cam":
         return "1 Camera";
       case "2 Cam":
@@ -270,6 +313,15 @@ const StudioDetails = () => {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {isLightboxOpen && (
+          <ImageLightbox
+            images={studio.images}
+            currentIndex={currentImageIndex}
+            onClose={handleCloseLightbox}
+            onPrev={handlePrevImage}
+            onNext={handleNextImage}
+          />
+        )}
         <div className="mb-8">
           <h1 className="text-3xl lg:text-4xl font-bold mb-4 text-gray-900">
             {displayStudio.name}
@@ -300,6 +352,16 @@ const StudioDetails = () => {
                 {formatOperationalHours(studio.operationalHours)}
               </span>
             </div>
+            {/* Display Minimum Booking Duration */}
+            {studio.minimumDurationHours && (
+              <div className="flex items-center">
+                <Info className="h-5 w-5 mr-2 text-indigo-600" />
+                <span className="text-sm lg:text-base">
+                  Minimum booking: {studio.minimumDurationHours} hour
+                  {studio.minimumDurationHours > 1 ? "s" : ""}
+                </span>
+              </div>
+            )}
             {studio.instagramUsername && (
               <div className="flex items-center">
                 <Instagram className="h-5 w-5 mr-2 text-indigo-600" />
@@ -329,7 +391,10 @@ const StudioDetails = () => {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           <div className="xl:col-span-2">
             <div className="mb-8">
-              <StudioCarousel images={studio.images} />
+              <StudioCarousel
+                images={studio.images}
+                onImageClick={handleOpenLightbox}
+              />
             </div>
             <div className="bg-white p-6 lg:p-8 rounded-xl shadow-sm border border-gray-200 mb-8">
               <h2 className="text-2xl font-semibold mb-6 text-gray-900">
@@ -339,69 +404,204 @@ const StudioDetails = () => {
                 {studio.description}
               </p>
 
-              {/* Amenities Display */}
-              {studio.amenities && studio.amenities.length > 0 && (
-                <>
-                  <h3 className="text-lg font-medium mb-4 text-gray-900 flex items-center">
-                    <Coffee className="h-5 w-5 mr-2 text-indigo-600" />
-                    Amenities
-                  </h3>
-                  <div className="flex flex-wrap gap-3 mb-8">
-                    {studio.amenities.map((amenity, index) => (
-                      <span
-                        key={index}
-                        className="bg-green-50 text-green-700 px-4 py-2 rounded-full text-sm font-medium"
+              <div className="border-t border-gray-200 pt-6 mb-6">
+                <h3 className="text-lg font-medium mb-4 text-gray-900 flex items-center">
+                  <Camera className="h-5 w-5 mr-2 text-indigo-600" />
+                  Packages
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {studio.packages &&
+                    studio.packages.map((pkg) => (
+                      <div
+                        key={pkg.key}
+                        className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-200"
                       >
-                        {amenity}
-                      </span>
+                        <div className="flex items-center mb-3">
+                          <Camera className="h-5 w-5 mr-2 text-indigo-600" />
+                          <span className="font-medium text-gray-900">
+                            {getPackageTitle(pkg.key)}
+                          </span>
+                        </div>
+                        <p className="text-2xl font-bold text-indigo-600 mb-2">
+                          ₹{pkg.price}
+                        </p>
+                        <p className="text-sm text-gray-600 mb-1">per hour</p>
+                        <p className="text-sm text-gray-700">
+                          {pkg.description}
+                        </p>
+                      </div>
                     ))}
+                </div>
+              </div>
+
+              {/* Area Collapsible Section */}
+              {studio.area && (
+                <div className="border-t border-gray-200 pt-6 mb-6">
+                  <button
+                    onClick={() => setIsAreaOpen(!isAreaOpen)}
+                    className="w-full flex justify-between items-center text-left focus:outline-none"
+                  >
+                    <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                      <Square className="h-5 w-5 mr-2 text-indigo-600" />
+                      Studio Area
+                    </h3>
+                    <ChevronDown
+                      className={`h-6 w-6 text-gray-500 transform transition-transform duration-300 ${
+                        isAreaOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  <div
+                    className={`transition-all duration-500 ease-in-out overflow-hidden ${
+                      isAreaOpen ? "max-h-[1000px] mt-4" : "max-h-0"
+                    }`}
+                  >
+                    <p className="text-gray-700 leading-relaxed">
+                      The total area of the studio is {studio.area} square feet.
+                    </p>
                   </div>
-                </>
+                </div>
               )}
 
-              <h3 className="text-lg font-medium mb-4 text-gray-900 flex items-center">
-                <Wrench className="h-5 w-5 mr-2 text-indigo-600" />
-                Equipment
-              </h3>
-              <div className="flex flex-wrap gap-3 mb-8">
-                {studio.equipments &&
-                  studio.equipments.map((equipment, index) => (
-                    <span
-                      key={index}
-                      className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-full text-sm font-medium"
-                    >
-                      {equipment}
-                    </span>
-                  ))}
-              </div>
-              <h3 className="text-lg font-medium mb-4 text-gray-900 flex items-center">
-                <Camera className="h-5 w-5 mr-2 text-indigo-600" />
-                Packages
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {studio.packages &&
-                  studio.packages.map((pkg) => (
-                    <div
-                      key={pkg.key}
-                      className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-200"
-                    >
-                      <div className="flex items-center mb-3">
-                        <Camera className="h-5 w-5 mr-2 text-indigo-600" />
-                        <span className="font-medium text-gray-900">
-                          {getPackageTitle(pkg.key)}
+              {/* Equipment Collapsible Section */}
+              <div className="border-t border-gray-200 pt-6 mb-6">
+                <button
+                  onClick={() => setIsEquipmentOpen(!isEquipmentOpen)}
+                  className="w-full flex justify-between items-center text-left focus:outline-none"
+                >
+                  <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                    <Wrench className="h-5 w-5 mr-2 text-indigo-600" />
+                    Equipment
+                  </h3>
+                  <ChevronDown
+                    className={`h-6 w-6 text-gray-500 transform transition-transform duration-300 ${
+                      isEquipmentOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                <div
+                  className={`transition-all duration-500 ease-in-out overflow-hidden ${
+                    isEquipmentOpen ? "max-h-[1000px] mt-4" : "max-h-0"
+                  }`}
+                >
+                  <div className="flex flex-wrap gap-3">
+                    {studio.equipments &&
+                      studio.equipments.map((equipment, index) => (
+                        <span
+                          key={index}
+                          className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-full text-sm font-medium"
+                        >
+                          {equipment}
                         </span>
-                      </div>
-                      <p className="text-2xl font-bold text-indigo-600 mb-2">
-                        ₹{pkg.price}
-                      </p>
-                      <p className="text-sm text-gray-600 mb-1">per hour</p>
-                      <p className="text-sm text-gray-700">{pkg.description}</p>
-                    </div>
-                  ))}
+                      ))}
+                  </div>
+                </div>
               </div>
+
+              {/* Amenities Collapsible Section */}
+              {studio.amenities && studio.amenities.length > 0 && (
+                <div className="border-t border-gray-200 pt-6 mb-6">
+                  <button
+                    onClick={() => setIsAmenitiesOpen(!isAmenitiesOpen)}
+                    className="w-full flex justify-between items-center text-left focus:outline-none"
+                  >
+                    <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                      <Coffee className="h-5 w-5 mr-2 text-indigo-600" />
+                      Amenities
+                    </h3>
+                    <ChevronDown
+                      className={`h-6 w-6 text-gray-500 transform transition-transform duration-300 ${
+                        isAmenitiesOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  <div
+                    className={`transition-all duration-500 ease-in-out overflow-hidden ${
+                      isAmenitiesOpen ? "max-h-[1000px] mt-4" : "max-h-0"
+                    }`}
+                  >
+                    <div className="flex flex-wrap gap-3">
+                      {studio.amenities.map((amenity, index) => (
+                        <span
+                          key={index}
+                          className="bg-green-50 text-green-700 px-4 py-2 rounded-full text-sm font-medium"
+                        >
+                          {amenity}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Rules Section */}
+              {studio.rules && (
+                <div className="border-t border-gray-200 pt-6 mb-6">
+                  <button
+                    onClick={() => setIsRulesOpen(!isRulesOpen)}
+                    className="w-full flex justify-between items-center text-left focus:outline-none"
+                  >
+                    <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                      <FileText className="h-5 w-5 mr-2 text-indigo-600" />
+                      Rules
+                    </h3>
+                    <ChevronDown
+                      className={`h-6 w-6 text-gray-500 transform transition-transform duration-300 ${
+                        isRulesOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  <div
+                    className={`transition-all duration-500 ease-in-out overflow-hidden ${
+                      isRulesOpen ? "max-h-[1000px] mt-4" : "max-h-0"
+                    }`}
+                  >
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                      {studio.rules}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Cancellation Policy Collapsible Section */}
+              <div className="border-t border-gray-200 pt-6 mb-6">
+                <button
+                  onClick={() =>
+                    setIsCancellationPolicyOpen(!isCancellationPolicyOpen)
+                  }
+                  className="w-full flex justify-between items-center text-left focus:outline-none"
+                >
+                  <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                    <Info className="h-5 w-5 mr-2 text-indigo-600" />
+                    Cancellation Policy
+                  </h3>
+                  <ChevronDown
+                    className={`h-6 w-6 text-gray-500 transform transition-transform duration-300 ${
+                      isCancellationPolicyOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                <div
+                  className={`transition-all duration-500 ease-in-out overflow-hidden ${
+                    isCancellationPolicyOpen ? "max-h-[1000px] mt-4" : "max-h-0"
+                  }`}
+                >
+                  <p className="text-gray-700 leading-relaxed">
+                    If any guest cancels, we usually allocate a different slot
+                    in the upcoming dates or months at no extra cost.
+                  </p>
+                  <p className="text-gray-700 leading-relaxed mt-2">
+                    <span className="font-semibold">Note:</span> In the event
+                    that the host fails to confirm your booking, the reservation
+                    will be automatically canceled, and a full refund will be
+                    issued to you.
+                  </p>
+                </div>
+              </div>
+
               {studio.addons && studio.addons.length > 0 && (
-                <>
-                  <h3 className="text-lg font-medium mb-4 mt-8 text-gray-900 flex items-center">
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-medium mb-4 text-gray-900 flex items-center">
                     <Package className="h-5 w-5 mr-2 text-indigo-600" />
                     Add-on Services
                   </h3>
@@ -428,16 +628,8 @@ const StudioDetails = () => {
                       </div>
                     ))}
                   </div>
-                </>
+                </div>
               )}
-              <h3 className="text-lg font-medium mb-4 mt-8 text-gray-900 flex items-center">
-                <Info className="h-5 w-5 mr-2 text-indigo-600" />
-                Cancellation Policy
-              </h3>
-              <p className="text-gray-700 leading-relaxed">
-                Cancellation or changes in booking is possible through demand,
-                visit contact us page and pull up the request.
-              </p>
             </div>
             {studio.youtubeLinks && studio.youtubeLinks.length > 0 && (
               <div className="bg-white p-6 lg:p-8 rounded-xl shadow-sm border border-gray-200 mb-8">
@@ -502,6 +694,7 @@ const StudioDetails = () => {
                     packages={studio.packages || []}
                     operationalHours={studio.operationalHours}
                     onSlotSelect={handleSlotSelect}
+                    minimumDurationHours={studio.minimumDurationHours}
                   />
                   {selectedSlot && (
                     <div className="mt-6">

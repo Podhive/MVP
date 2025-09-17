@@ -159,7 +159,7 @@ const HelpCenter = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full mb-6">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-indigo-900 rounded-full mb-6">
             <Book className="h-10 w-10 text-white" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -201,7 +201,7 @@ const HelpCenter = () => {
                       onClick={() => setSelectedCategory(category.id)}
                       className={`w-full flex items-center p-3 rounded-xl transition-all ${
                         selectedCategory === category.id
-                          ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
+                          ? "bg-indigo-900 text-white shadow-lg"
                           : "text-gray-700 hover:bg-gray-50"
                       }`}
                     >
@@ -234,7 +234,7 @@ const HelpCenter = () => {
                       onClick={() => toggleFaq(faq.id)}
                       className="w-full flex justify-between items-start text-left group"
                     >
-                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors pr-4">
+                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-900 transition-colors pr-4">
                         {faq.question}
                       </h3>
                       <div className="flex-shrink-0">
@@ -283,7 +283,7 @@ const HelpCenter = () => {
         </div>
 
         {/* Contact Support Section */}
-        <div className="mt-16 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-center text-white">
+        <div className="mt-16 bg-indigo-900 rounded-2xl p-8 text-center text-white">
           <MessageCircle className="h-16 w-16 mx-auto mb-6 opacity-90" />
           <h2 className="text-3xl font-bold mb-4">Still need help?</h2>
           <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto">
@@ -293,7 +293,7 @@ const HelpCenter = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/contact"
-              className="inline-flex items-center px-8 py-4 bg-white text-indigo-600 rounded-xl hover:bg-gray-50 transition-colors font-semibold shadow-lg"
+              className="inline-flex items-center px-8 py-4 bg-white text-indigo-900 rounded-xl hover:bg-gray-50 transition-colors font-semibold shadow-lg"
             >
               <MessageCircle className="h-5 w-5 mr-2" />
               Contact Support

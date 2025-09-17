@@ -5,6 +5,7 @@ const cloudinary = require("../config/cloudinary");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const sharp = require("sharp");
 
 // Ensure tmp directory exists
 const tmpDir = path.join(__dirname, "../tmp");
@@ -30,27 +31,85 @@ const upload = multer({
   },
 });
 
-// Helper: upload and clean temp images
+// Helper: apply watermark, upload buffer, and clean temp images
+// Helper: apply watermark, upload buffer, and clean temp images
+// Helper with enhanced logging
+// Helper: apply watermark, upload buffer, and clean temp images
 const uploadImages = async (files) => {
-  const uploaded = [];
-  for (const file of files) {
-    const result = await cloudinary.uploader.upload(file.path, {
-      folder: "studios",
-    });
-    uploaded.push(result.secure_url);
+  const watermarkText = "Podhive";
+  const watermarkSvg = Buffer.from(
+    `<svg width="250" height="100">
+      <text
+        x="50%" y="50%"
+        dominant-baseline="middle"
+        text-anchor="middle"
+        font-size="24"
+        font-family="sans-serif"
+        font-weight="bold"
+        fill="rgba(255, 255, 255, 0.4)"
+        transform="rotate(-25 125 50)">
+        ${watermarkText}
+      </text>
+    </svg>`
+  );
+
+  const uploadPromises = files.map(async (file) => {
     try {
-      fs.unlinkSync(file.path);
-    } catch (err) {
-      // silent fail on cleanup
+      // 1. Read the entire file into a buffer FIRST.
+      // This immediately closes the file handle, preventing the EPERM lock issue.
+      const fileBuffer = fs.readFileSync(file.path);
+
+      // 2. Process the buffer in memory using sharp.
+      const watermarkedBuffer = await sharp(fileBuffer)
+        .composite([
+          {
+            input: watermarkSvg,
+            tile: true,
+            gravity: "center",
+          },
+        ])
+        .toBuffer();
+
+      // 3. Upload the resulting buffer to Cloudinary.
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: "studios" },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          }
+        );
+        uploadStream.end(watermarkedBuffer);
+      });
+
+      return result.secure_url;
+    } catch (processErr) {
+      console.error(
+        `Failed to process/upload ${file.originalname}:`,
+        processErr
+      );
+      return null;
+    } finally {
+      // 4. Clean up the now-unlocked original temp file.
+      try {
+        fs.unlinkSync(file.path);
+      } catch (cleanupErr) {
+        console.warn(
+          `Failed to clean up temp file ${file.path}:`,
+          cleanupErr.message
+        );
+      }
     }
-  }
-  return uploaded;
+  });
+
+  const results = await Promise.all(uploadPromises);
+  return results.filter((url) => url);
 };
 
 // Parse JSON fields from multipart/form-data
 const parseJsonFields = (body) => ({
   equipments: body.equipments ? JSON.parse(body.equipments) : [],
-  amenities: body.amenities ? JSON.parse(body.amenities) : [], // Added amenities
+  amenities: body.amenities ? JSON.parse(body.amenities) : [],
   packages: body.packages ? JSON.parse(body.packages) : [],
   addons: body.addons ? JSON.parse(body.addons) : [],
   location: body.location ? JSON.parse(body.location) : {},
@@ -64,10 +123,18 @@ const parseJsonFields = (body) => ({
 
 const addStudio = async (req, res) => {
   try {
-    const { name, description, pricePerHour, instagramUsername } = req.body;
+    const {
+      name,
+      description,
+      pricePerHour,
+      instagramUsername,
+      area,
+      rules,
+      minimumDurationHours,
+    } = req.body;
     const {
       equipments,
-      amenities, // Destructure amenities
+      amenities,
       packages,
       addons,
       location,
@@ -83,7 +150,7 @@ const addStudio = async (req, res) => {
       description,
       author: req.user._id,
       equipments,
-      amenities, // Add amenities to new studio
+      amenities,
       images: uploadedImages,
       location,
       operationalHours,
@@ -93,6 +160,9 @@ const addStudio = async (req, res) => {
       instagramUsername,
       approved: false,
       pricePerHour: parseFloat(pricePerHour),
+      minimumDurationHours: parseInt(minimumDurationHours, 10) || 1,
+      area: area ? parseInt(area, 10) : undefined,
+      rules,
     });
 
     const createdStudio = await studio.save();
@@ -136,14 +206,8 @@ const getStudios = async (req, res) => {
           date: { $gte: today },
         },
       },
-      {
-        $unwind: "$slots",
-      },
-      {
-        $match: {
-          "slots.isAvailable": true,
-        },
-      },
+      { $unwind: "$slots" },
+      { $match: { "slots.isAvailable": true } },
       {
         $match: {
           $or: [
@@ -167,10 +231,7 @@ const getStudios = async (req, res) => {
         $group: {
           _id: "$_id.studio",
           availability: {
-            $push: {
-              date: "$_id.date",
-              slots: "$slots",
-            },
+            $push: { date: "$_id.date", slots: "$slots" },
           },
         },
       },
@@ -206,10 +267,18 @@ const updateStudio = async (req, res) => {
         .json({ message: "Not authorized to edit this studio" });
     }
 
-    const { name, description, pricePerHour, instagramUsername } = req.body;
+    const {
+      name,
+      description,
+      pricePerHour,
+      instagramUsername,
+      area,
+      rules,
+      minimumDurationHours,
+    } = req.body;
     const {
       equipments,
-      amenities, // Destructure amenities
+      amenities,
       packages,
       addons,
       location,
@@ -227,12 +296,15 @@ const updateStudio = async (req, res) => {
     studio.pricePerHour = parseFloat(pricePerHour);
     studio.instagramUsername = instagramUsername;
     studio.equipments = equipments;
-    studio.amenities = amenities; // Update amenities
+    studio.amenities = amenities;
     studio.packages = packages;
     studio.addons = addons;
     studio.location = location;
     studio.operationalHours = operationalHours;
     studio.youtubeLinks = youtubeLinks;
+    studio.minimumDurationHours = parseInt(minimumDurationHours, 10) || 1;
+    studio.area = area ? parseInt(area, 10) : undefined;
+    studio.rules = rules;
 
     if (availability && Array.isArray(availability)) {
       const bulkOps = availability.map((day) => ({

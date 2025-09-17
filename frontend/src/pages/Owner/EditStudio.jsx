@@ -65,6 +65,7 @@ const EditStudio = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [studio, setStudio] = useState(null);
+  const [initialDuration, setInitialDuration] = useState(1);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -72,31 +73,27 @@ const EditStudio = () => {
     equipments: [],
     amenities: [],
     customEquipment: "",
+    minimumDurationHours: "1",
     operationalHours: {
-      start_time: "09:00",
-      end_time: "18:00",
+      start: "9",
+      end: "18",
     },
     packages: [],
     addons: [],
-    location: {
-      fullAddress: "",
-      city: "",
-      state: "",
-      pinCode: "",
-    },
+    location: { fullAddress: "", city: "", state: "", pinCode: "" },
     youtubeLinks: ["", ""],
     instagramUsername: "",
+    area: "",
+    rules: "",
   });
 
   const [customAmenity, setCustomAmenity] = useState("");
   const [existingImages, setExistingImages] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
-
   const [availability, setAvailability] = useState([]);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-
   const [newAddon, setNewAddon] = useState({
     key: "",
     name: "",
@@ -130,6 +127,7 @@ const EditStudio = () => {
         }
 
         setStudio(foundStudio);
+        setInitialDuration(foundStudio.minimumDurationHours || 1);
         setExistingImages(foundStudio.images || []);
 
         if (foundStudio.availability && foundStudio.availability.length > 0) {
@@ -155,28 +153,21 @@ const EditStudio = () => {
             })
             .filter(Boolean)
             .sort((a, b) => a.date - b.date);
-
           setAvailability(loadedAvailability);
         }
 
         const youtubeLinks = foundStudio.youtubeLinks || [];
-
         const packageKeys = ["No Cam", "1 Cam", "2 Cam", "3 Cam"];
         const defaultPackages = [
-          { key: "No Cam", price: "", description: "Audio only recording" },
           {
-            key: "1 Cam",
+            key: "No Cam",
             price: "",
-            description: "Basic single camera setup",
+            description: "Studio without equipments",
           },
+          { key: "1 Cam", price: "", description: "Basic single camera setup" },
           { key: "2 Cam", price: "", description: "Dual camera angles" },
-          {
-            key: "3 Cam",
-            price: "",
-            description: "Full setup with 3 cameras",
-          },
+          { key: "3 Cam", price: "", description: "Full setup with 3 cameras" },
         ];
-
         const studioPackages = foundStudio.packages || [];
         const mergedPackages = packageKeys.map((key) => {
           const existingPkg = studioPackages.find((p) => p.key === key);
@@ -190,19 +181,11 @@ const EditStudio = () => {
           equipments: foundStudio.equipments || [],
           amenities: foundStudio.amenities || [],
           customEquipment: "",
+          minimumDurationHours:
+            foundStudio.minimumDurationHours?.toString() || "1",
           operationalHours: {
-            start_time: foundStudio.operationalHours?.start
-              ? `${String(foundStudio.operationalHours.start).padStart(
-                  2,
-                  "0"
-                )}:00`
-              : "09:00",
-            end_time: foundStudio.operationalHours?.end
-              ? `${String(foundStudio.operationalHours.end).padStart(
-                  2,
-                  "0"
-                )}:00`
-              : "18:00",
+            start: foundStudio.operationalHours?.start?.toString() || "9",
+            end: foundStudio.operationalHours?.end?.toString() || "18",
           },
           packages: mergedPackages,
           addons: foundStudio.addons || [],
@@ -214,6 +197,8 @@ const EditStudio = () => {
           },
           youtubeLinks: [youtubeLinks[0] || "", youtubeLinks[1] || ""],
           instagramUsername: foundStudio.instagramUsername || "",
+          area: foundStudio.area || "",
+          rules: foundStudio.rules || "",
         });
       } catch (error) {
         console.error("Error fetching studio:", error);
@@ -223,21 +208,35 @@ const EditStudio = () => {
         setLoading(false);
       }
     };
-
     fetchStudioData();
   }, [studioId, navigate, user]);
 
+  const renderHourOptions = (isEndTime = false) => {
+    const options = [];
+    const start = isEndTime ? 1 : 0;
+    const limit = isEndTime ? 25 : 24;
+    for (let i = start; i < limit; i++) {
+      const hour = i === 24 ? 0 : i;
+      const date = new Date();
+      date.setHours(hour, 0, 0, 0);
+      let displayTime = format(date, "h a");
+      if (isEndTime && i === 24) displayTime = "12 AM (Next Day)";
+      options.push(
+        <option key={i} value={i}>
+          {displayTime}
+        </option>
+      );
+    }
+    return options;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     if (name.includes(".")) {
       const [parent, child] = name.split(".");
       setFormData((prev) => ({
         ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: value,
-        },
+        [parent]: { ...prev[parent], [child]: value },
       }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
@@ -388,13 +387,19 @@ const EditStudio = () => {
       return;
     }
 
-    const startHour = parseInt(
-      formData.operationalHours.start_time.split(":")[0]
-    );
-    const endHour = parseInt(formData.operationalHours.end_time.split(":")[0]);
+    const startHour = parseInt(formData.operationalHours.start, 10);
+    const endHour = parseInt(formData.operationalHours.end, 10);
+    const minDuration = parseInt(formData.minimumDurationHours, 10);
 
     if (isNaN(startHour) || isNaN(endHour) || startHour >= endHour) {
       toast.error("Invalid operational hours. Please set a valid time range.");
+      return;
+    }
+
+    if (endHour - startHour < minDuration) {
+      toast.error(
+        "Operational hours must be longer than the minimum slot duration."
+      );
       return;
     }
 
@@ -402,28 +407,21 @@ const EditStudio = () => {
       start: startOfDay(startDate),
       end: startOfDay(endDate),
     });
-
     const newAvailability = dateInterval.map((date) => {
       const slots = [];
       for (let hour = startHour; hour < endHour; hour++) {
         slots.push({ hour, isAvailable: true });
       }
-      return {
-        dateKey: date.toISOString(),
-        date: date,
-        slots: slots,
-      };
+      return { dateKey: date.toISOString(), date: date, slots: slots };
     });
 
     const availabilityMap = new Map(
       availability.map((day) => [day.dateKey, day])
     );
     newAvailability.forEach((day) => availabilityMap.set(day.dateKey, day));
-
     const updatedAvailability = Array.from(availabilityMap.values()).sort(
       (a, b) => a.date - b.date
     );
-
     setAvailability(updatedAvailability);
     toast.success(
       `Generated or updated ${newAvailability.length} days of availability.`
@@ -464,6 +462,12 @@ const EditStudio = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (parseInt(formData.minimumDurationHours, 10) !== initialDuration) {
+      const confirmed = window.confirm(
+        "Warning: You have changed the minimum booking duration. This may affect slot availability for customers. Are you sure you want to proceed?"
+      );
+      if (!confirmed) return;
+    }
 
     if (!formData.name) {
       toast.error("Studio name is required");
@@ -491,7 +495,6 @@ const EditStudio = () => {
     }
 
     setSubmitting(true);
-
     try {
       const formattedAvailability = availability.map((day) => ({
         date: format(day.date, "yyyy-MM-dd"),
@@ -501,42 +504,30 @@ const EditStudio = () => {
       const finalPackages = formData.packages.filter(
         (pkg) => pkg.price && parseFloat(pkg.price) > 0
       );
-
-      // **BUG FIX: Calculate minimum price from valid packages**
       const prices = finalPackages.map((p) => parseFloat(p.price));
       const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
 
       const formDataObj = new FormData();
       formDataObj.append("name", formData.name);
       formDataObj.append("description", formData.description);
-      formDataObj.append("pricePerHour", minPrice); // Use calculated min price
+      formDataObj.append("pricePerHour", minPrice);
       formDataObj.append("equipments", JSON.stringify(formData.equipments));
       formDataObj.append("amenities", JSON.stringify(formData.amenities));
+      formDataObj.append("area", formData.area);
+      formDataObj.append("rules", formData.rules);
+      formDataObj.append("minimumDurationHours", formData.minimumDurationHours);
 
-      const startHour = parseInt(
-        formData.operationalHours.start_time.split(":")[0],
-        10
-      );
-      const endHour = parseInt(
-        formData.operationalHours.end_time.split(":")[0],
-        10
-      );
+      const startHour = parseInt(formData.operationalHours.start, 10);
+      const endHour = parseInt(formData.operationalHours.end, 10);
 
       formDataObj.append(
         "operationalHours",
-        JSON.stringify({
-          start: startHour,
-          end: endHour,
-        })
+        JSON.stringify({ start: startHour, end: endHour })
       );
-
       formDataObj.append(
         "packages",
         JSON.stringify(
-          finalPackages.map((pkg) => ({
-            ...pkg,
-            price: parseFloat(pkg.price),
-          }))
+          finalPackages.map((pkg) => ({ ...pkg, price: parseFloat(pkg.price) }))
         )
       );
       formDataObj.append("addons", JSON.stringify(formData.addons));
@@ -548,10 +539,7 @@ const EditStudio = () => {
         JSON.stringify(formData.youtubeLinks.filter((link) => link))
       );
       formDataObj.append("instagramUsername", formData.instagramUsername);
-
-      imageFiles.forEach((file) => {
-        formDataObj.append("images", file);
-      });
+      imageFiles.forEach((file) => formDataObj.append("images", file));
 
       await updateStudio(studioId, formDataObj);
       toast.success(
@@ -569,7 +557,7 @@ const EditStudio = () => {
   const getPackageTitle = (key) => {
     switch (key) {
       case "No Cam":
-        return "Audio-Only Package (Optional)";
+        return "Studio without equipments (Optional)";
       case "1 Cam":
         return "1 Camera Setup (Base Price)";
       case "2 Cam":
@@ -616,7 +604,6 @@ const EditStudio = () => {
                   Basic Information
                 </h2>
               </div>
-
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="lg:col-span-2">
                   <label
@@ -636,7 +623,24 @@ const EditStudio = () => {
                     placeholder="Enter your studio name"
                   />
                 </div>
-
+                <div>
+                  <label
+                    htmlFor="area"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Studio Area (in sq ft)
+                  </label>
+                  <input
+                    id="area"
+                    name="area"
+                    type="number"
+                    min="0"
+                    value={formData.area}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    placeholder="e.g., 250"
+                  />
+                </div>
                 <div className="lg:col-span-2">
                   <label
                     htmlFor="description"
@@ -652,6 +656,23 @@ const EditStudio = () => {
                     onChange={handleChange}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                     placeholder="Describe your studio, its features, and what makes it special..."
+                  ></textarea>
+                </div>
+                <div className="lg:col-span-2">
+                  <label
+                    htmlFor="rules"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Rules
+                  </label>
+                  <textarea
+                    id="rules"
+                    name="rules"
+                    rows="4"
+                    value={formData.rules}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    placeholder="e.g., No smoking. Clean up after use."
                   ></textarea>
                 </div>
               </div>
@@ -727,45 +748,67 @@ const EditStudio = () => {
               <div className="flex items-center mb-6">
                 <Clock className="h-6 w-6 text-indigo-600 mr-2" />
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Operational Hours
+                  Operational Details
                 </h2>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label
-                    htmlFor="operationalHours.start_time"
+                    htmlFor="operationalHours.start"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
                     Opening Time *
                   </label>
-                  <input
-                    id="operationalHours.start_time"
-                    name="operationalHours.start_time"
-                    type="time"
-                    value={formData.operationalHours.start_time}
+                  <select
+                    id="operationalHours.start"
+                    name="operationalHours.start"
+                    value={formData.operationalHours.start}
                     onChange={handleChange}
                     required
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                  />
+                  >
+                    {renderHourOptions()}
+                  </select>
                 </div>
-
                 <div>
                   <label
-                    htmlFor="operationalHours.end_time"
+                    htmlFor="operationalHours.end"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
                     Closing Time *
                   </label>
-                  <input
-                    id="operationalHours.end_time"
-                    name="operationalHours.end_time"
-                    type="time"
-                    value={formData.operationalHours.end_time}
+                  <select
+                    id="operationalHours.end"
+                    name="operationalHours.end"
+                    value={formData.operationalHours.end}
                     onChange={handleChange}
                     required
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                  />
+                  >
+                    {renderHourOptions(true)}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="minimumDurationHours"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Min. Booking (hours) *
+                  </label>
+                  <select
+                    id="minimumDurationHours"
+                    name="minimumDurationHours"
+                    value={formData.minimumDurationHours}
+                    onChange={handleChange}
+                    required
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((h) => (
+                      <option key={h} value={h}>
+                        {h} hour{h > 1 ? "s" : ""}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -857,7 +900,6 @@ const EditStudio = () => {
                   Equipment
                 </h2>
               </div>
-
               <div className="mb-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Select Available Equipment
@@ -881,7 +923,6 @@ const EditStudio = () => {
                   ))}
                 </div>
               </div>
-
               <div className="mb-4">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Add Custom Equipment
@@ -909,7 +950,6 @@ const EditStudio = () => {
                   </button>
                 </div>
               </div>
-
               {formData.equipments.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -944,7 +984,6 @@ const EditStudio = () => {
                   Camera Packages
                 </h2>
               </div>
-
               <div className="space-y-6">
                 {formData.packages.map((pkg, index) => (
                   <div
@@ -995,7 +1034,6 @@ const EditStudio = () => {
               </div>
             </div>
 
-            {/* Add-ons, Location, Availability, Images sections remain the same */}
             {/* Add-ons */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center mb-6">
@@ -1004,7 +1042,6 @@ const EditStudio = () => {
                   Add-on Services
                 </h2>
               </div>
-
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Add New Service
@@ -1106,7 +1143,6 @@ const EditStudio = () => {
                   Add Service
                 </button>
               </div>
-
               {formData.addons.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -1148,7 +1184,6 @@ const EditStudio = () => {
               <h2 className="text-xl font-semibold mb-6 text-gray-900">
                 Location
               </h2>
-
               <div className="grid grid-cols-1 gap-6">
                 <div>
                   <label
@@ -1168,7 +1203,6 @@ const EditStudio = () => {
                     placeholder="Street address"
                   />
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <label
@@ -1187,7 +1221,6 @@ const EditStudio = () => {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                     />
                   </div>
-
                   <div>
                     <label
                       htmlFor="location.state"
@@ -1205,7 +1238,6 @@ const EditStudio = () => {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                     />
                   </div>
-
                   <div>
                     <label
                       htmlFor="location.pinCode"
@@ -1235,7 +1267,6 @@ const EditStudio = () => {
                   Manage Availability
                 </h2>
               </div>
-
               <div className="p-4 bg-gray-50 rounded-lg">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Generate / Update Availability for a Date Range
@@ -1285,7 +1316,6 @@ const EditStudio = () => {
                   Generate / Update Slots
                 </button>
               </div>
-
               {availability.length > 0 && (
                 <div className="mt-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -1341,7 +1371,6 @@ const EditStudio = () => {
                   Studio Images
                 </h2>
               </div>
-
               {existingImages.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-700 mb-3">
@@ -1367,7 +1396,6 @@ const EditStudio = () => {
                   </div>
                 </div>
               )}
-
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-400 transition-colors">
                 <input
                   type="file"
@@ -1387,7 +1415,6 @@ const EditStudio = () => {
                   </p>
                 </label>
               </div>
-
               {selectedImages.length > 0 && (
                 <div className="mt-6">
                   <h3 className="text-sm font-medium text-gray-700 mb-3">

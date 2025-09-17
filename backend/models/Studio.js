@@ -51,7 +51,7 @@ const StudioSchema = new Schema(
     description: { type: String, default: "" },
     author: { type: Schema.Types.ObjectId, ref: "User", required: true },
     equipments: [{ type: String }],
-    amenities: [{ type: String }], // Added amenities field
+    amenities: [{ type: String }],
     images: [{ type: String }],
     location: LocationSchema,
     reviews: [{ type: Schema.Types.ObjectId, ref: "Review" }],
@@ -60,6 +60,16 @@ const StudioSchema = new Schema(
 
     // New fields
     pricePerHour: { type: Number, required: true },
+
+    // ## MODIFIED: Added minimumDurationHours ##
+    minimumDurationHours: {
+      type: Number,
+      default: 1,
+      min: 1,
+      max: 8,
+      required: true,
+    },
+
     operationalHours: {
       start: { type: Number, required: true, min: 0, max: 23 },
       end: { type: Number, required: true, min: 1, max: 24 },
@@ -81,6 +91,10 @@ const StudioSchema = new Schema(
       trim: true,
       default: "",
     },
+
+    // ADDED FIELDS
+    area: { type: Number }, // Studio area in square feet
+    rules: { type: String, default: "" }, // Studio rules
   },
   { timestamps: true }
 );

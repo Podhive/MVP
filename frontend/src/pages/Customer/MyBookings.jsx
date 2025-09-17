@@ -152,7 +152,7 @@ const MyBookings = () => {
             </p>
             <a
               href="/studios"
-              className="inline-block bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+              className="inline-block bg-indigo-900 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
             >
               Browse Studios
             </a>

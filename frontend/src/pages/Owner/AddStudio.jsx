@@ -70,12 +70,13 @@ const AddStudio = () => {
     equipments: [],
     amenities: [],
     customEquipment: "",
+    minimumDurationHours: "1",
     operationalHours: {
-      start_time: "09:00",
-      end_time: "18:00",
+      start: "9",
+      end: "18",
     },
     packages: [
-      { key: "No Cam", price: "", description: "Audio only recording" },
+      { key: "No Cam", price: "", description: "Studio without equipments" },
       { key: "1 Cam", price: "", description: "Basic single camera setup" },
       { key: "2 Cam", price: "", description: "Dual camera angles" },
       { key: "3 Cam", price: "", description: "Full setup with 3 cameras" },
@@ -89,17 +90,16 @@ const AddStudio = () => {
     },
     youtubeLinks: ["", ""],
     instagramUsername: "",
+    area: "",
+    rules: "",
   });
 
   const [customAmenity, setCustomAmenity] = useState("");
-
   const [selectedImages, setSelectedImages] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
-
   const [availability, setAvailability] = useState([]);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-
   const [newAddon, setNewAddon] = useState({
     key: "",
     name: "",
@@ -111,29 +111,19 @@ const AddStudio = () => {
   useEffect(() => {
     const savedDataJSON = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!savedDataJSON) return;
-
     try {
       const savedData = JSON.parse(savedDataJSON);
       const now = new Date().getTime();
       const TWO_DAYS_IN_MS = 2 * 24 * 60 * 60 * 1000;
-
       if (now - savedData.timestamp > TWO_DAYS_IN_MS) {
         localStorage.removeItem(LOCAL_STORAGE_KEY);
         return;
       }
-
-      if (savedData.formData) {
+      if (savedData.formData)
         setFormData((prev) => ({ ...prev, ...savedData.formData }));
-      }
-      if (savedData.newAddon) {
-        setNewAddon(savedData.newAddon);
-      }
-      if (savedData.startDate) {
-        setStartDate(new Date(savedData.startDate));
-      }
-      if (savedData.endDate) {
-        setEndDate(new Date(savedData.endDate));
-      }
+      if (savedData.newAddon) setNewAddon(savedData.newAddon);
+      if (savedData.startDate) setStartDate(new Date(savedData.startDate));
+      if (savedData.endDate) setEndDate(new Date(savedData.endDate));
     } catch (error) {
       console.error("Error parsing or loading studio form data:", error);
       localStorage.removeItem(LOCAL_STORAGE_KEY);
@@ -145,7 +135,6 @@ const AddStudio = () => {
       isInitialMount.current = false;
       return;
     }
-
     const dataToSave = {
       formData,
       newAddon,
@@ -153,25 +142,39 @@ const AddStudio = () => {
       endDate: endDate ? endDate.toISOString() : null,
       timestamp: new Date().getTime(),
     };
-
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
   }, [formData, newAddon, startDate, endDate, LOCAL_STORAGE_KEY]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     if (name.includes(".")) {
       const [parent, child] = name.split(".");
       setFormData((prev) => ({
         ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: value,
-        },
+        [parent]: { ...prev[parent], [child]: value },
       }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
+  };
+
+  const renderHourOptions = (isEndTime = false) => {
+    const options = [];
+    const start = isEndTime ? 1 : 0;
+    const limit = isEndTime ? 25 : 24;
+    for (let i = start; i < limit; i++) {
+      const hour = i === 24 ? 0 : i;
+      const date = new Date();
+      date.setHours(hour, 0, 0, 0);
+      let displayTime = format(date, "h a");
+      if (isEndTime && i === 24) displayTime = "12 AM (Next Day)";
+      options.push(
+        <option key={i} value={i}>
+          {displayTime}
+        </option>
+      );
+    }
+    return options;
   };
 
   const handleYoutubeLinkChange = (index, value) => {
@@ -275,12 +278,10 @@ const AddStudio = () => {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-
     if (files.length + selectedImages.length > 5) {
       toast.error("You can upload a maximum of 5 images");
       return;
     }
-
     const newImagePreviews = files.map((file) => URL.createObjectURL(file));
     setSelectedImages((prev) => [...prev, ...newImagePreviews]);
     setImageFiles((prev) => [...prev, ...files]);
@@ -300,14 +301,19 @@ const AddStudio = () => {
       toast.error("End date cannot be before the start date.");
       return;
     }
-
-    const startHour = parseInt(
-      formData.operationalHours.start_time.split(":")[0]
-    );
-    const endHour = parseInt(formData.operationalHours.end_time.split(":")[0]);
+    const startHour = parseInt(formData.operationalHours.start, 10);
+    const endHour = parseInt(formData.operationalHours.end, 10);
+    const minDuration = parseInt(formData.minimumDurationHours, 10);
 
     if (isNaN(startHour) || isNaN(endHour) || startHour >= endHour) {
       toast.error("Invalid operational hours. Please set a valid time range.");
+      return;
+    }
+
+    if (endHour - startHour < minDuration) {
+      toast.error(
+        "Operational hours must be longer than the minimum slot duration."
+      );
       return;
     }
 
@@ -338,12 +344,11 @@ const AddStudio = () => {
         if (day.dateKey === dateKey) {
           return {
             ...day,
-            slots: day.slots.map((slot) => {
-              if (slot.hour === hourToToggle) {
-                return { ...slot, isAvailable: !slot.isAvailable };
-              }
-              return slot;
-            }),
+            slots: day.slots.map((slot) =>
+              slot.hour === hourToToggle
+                ? { ...slot, isAvailable: !slot.isAvailable }
+                : slot
+            ),
           };
         }
         return day;
@@ -365,7 +370,6 @@ const AddStudio = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!formData.name) {
       toast.error("Studio name is required");
       return;
@@ -396,52 +400,38 @@ const AddStudio = () => {
     }
 
     setLoading(true);
-
     try {
       const formattedAvailability = availability.map((day) => ({
         date: format(day.date, "yyyy-MM-dd"),
         slots: day.slots,
       }));
-
       const finalPackages = formData.packages.filter(
         (pkg) => pkg.price && parseFloat(pkg.price) > 0
       );
-
-      // **BUG FIX: Calculate minimum price from valid packages**
       const prices = finalPackages.map((p) => parseFloat(p.price));
       const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
 
       const formDataObj = new FormData();
       formDataObj.append("name", formData.name);
       formDataObj.append("description", formData.description);
-      formDataObj.append("pricePerHour", minPrice); // Use calculated min price
+      formDataObj.append("pricePerHour", minPrice);
       formDataObj.append("equipments", JSON.stringify(formData.equipments));
       formDataObj.append("amenities", JSON.stringify(formData.amenities));
+      formDataObj.append("area", formData.area);
+      formDataObj.append("rules", formData.rules);
+      formDataObj.append("minimumDurationHours", formData.minimumDurationHours);
 
-      const startHour = parseInt(
-        formData.operationalHours.start_time.split(":")[0],
-        10
-      );
-      const endHour = parseInt(
-        formData.operationalHours.end_time.split(":")[0],
-        10
-      );
+      const startHour = parseInt(formData.operationalHours.start, 10);
+      const endHour = parseInt(formData.operationalHours.end, 10);
 
       formDataObj.append(
         "operationalHours",
-        JSON.stringify({
-          start: startHour,
-          end: endHour,
-        })
+        JSON.stringify({ start: startHour, end: endHour })
       );
-
       formDataObj.append(
         "packages",
         JSON.stringify(
-          finalPackages.map((pkg) => ({
-            ...pkg,
-            price: parseFloat(pkg.price),
-          }))
+          finalPackages.map((pkg) => ({ ...pkg, price: parseFloat(pkg.price) }))
         )
       );
       formDataObj.append("addons", JSON.stringify(formData.addons));
@@ -452,18 +442,13 @@ const AddStudio = () => {
         JSON.stringify(formData.youtubeLinks.filter((link) => link))
       );
       formDataObj.append("instagramUsername", formData.instagramUsername);
-
-      imageFiles.forEach((file) => {
-        formDataObj.append("images", file);
-      });
+      imageFiles.forEach((file) => formDataObj.append("images", file));
 
       await createStudio(formDataObj);
       toast.success(
         "Studio submitted for approval. Please wait for admin approval."
       );
-
       localStorage.removeItem(LOCAL_STORAGE_KEY);
-
       navigate("/owner/studios");
     } catch (error) {
       console.error("Error creating studio:", error);
@@ -476,7 +461,7 @@ const AddStudio = () => {
   const getPackageTitle = (key) => {
     switch (key) {
       case "No Cam":
-        return "Audio-Only Package (Optional)";
+        return "Studio without equipments (Optional)";
       case "1 Cam":
         return "1 Camera Setup (Base Price)";
       case "2 Cam":
@@ -530,6 +515,24 @@ const AddStudio = () => {
                     placeholder="Enter your studio name"
                   />
                 </div>
+                <div>
+                  <label
+                    htmlFor="area"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Studio Area (in sq ft)
+                  </label>
+                  <input
+                    id="area"
+                    name="area"
+                    type="number"
+                    min="0"
+                    value={formData.area}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    placeholder="e.g., 250"
+                  />
+                </div>
                 <div className="lg:col-span-2">
                   <label
                     htmlFor="description"
@@ -545,6 +548,23 @@ const AddStudio = () => {
                     onChange={handleChange}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                     placeholder="Describe your studio, its features, and what makes it special..."
+                  ></textarea>
+                </div>
+                <div className="lg:col-span-2">
+                  <label
+                    htmlFor="rules"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Rules
+                  </label>
+                  <textarea
+                    id="rules"
+                    name="rules"
+                    rows="4"
+                    value={formData.rules}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    placeholder="e.g., No smoking. Clean up after use."
                   ></textarea>
                 </div>
               </div>
@@ -615,48 +635,71 @@ const AddStudio = () => {
               </div>
             </div>
 
-            {/* Operational Hours */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center mb-6">
                 <Clock className="h-6 w-6 text-indigo-600 mr-2" />
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Operational Hours
+                  Operational Details
                 </h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label
-                    htmlFor="operationalHours.start_time"
+                    htmlFor="operationalHours.start"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
                     Opening Time *
                   </label>
-                  <input
-                    id="operationalHours.start_time"
-                    name="operationalHours.start_time"
-                    type="time"
-                    value={formData.operationalHours.start_time}
+                  <select
+                    id="operationalHours.start"
+                    name="operationalHours.start"
+                    value={formData.operationalHours.start}
                     onChange={handleChange}
                     required
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                  />
+                  >
+                    {renderHourOptions()}
+                  </select>
                 </div>
                 <div>
                   <label
-                    htmlFor="operationalHours.end_time"
+                    htmlFor="operationalHours.end"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
                     Closing Time *
                   </label>
-                  <input
-                    id="operationalHours.end_time"
-                    name="operationalHours.end_time"
-                    type="time"
-                    value={formData.operationalHours.end_time}
+                  <select
+                    id="operationalHours.end"
+                    name="operationalHours.end"
+                    value={formData.operationalHours.end}
                     onChange={handleChange}
                     required
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                  />
+                  >
+                    {renderHourOptions(true)}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="minimumDurationHours"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Min. Booking (hours) *
+                  </label>
+                  <select
+                    id="minimumDurationHours"
+                    name="minimumDurationHours"
+                    value={formData.minimumDurationHours}
+                    onChange={handleChange}
+                    required
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((h) => (
+                      <option key={h} value={h}>
+                        {h} hour{h > 1 ? "s" : ""}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -881,7 +924,7 @@ const AddStudio = () => {
                 ))}
               </div>
             </div>
-            {/* ... other form sections ... */}
+
             {/* Add-ons */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center mb-6">

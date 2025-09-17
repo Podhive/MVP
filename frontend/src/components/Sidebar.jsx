@@ -115,7 +115,7 @@ const Sidebar = () => {
   );
 
   return (
-    <div className="bg-indigo-800 text-white p-4 sticky top-0 z-50 flex items-center justify-between md:relative md:flex-col md:justify-start md:min-h-screen md:w-64">
+    <div className="bg-indigo-900 text-white p-4 sticky top-0 z-50 flex items-center justify-between md:relative md:flex-col md:justify-start md:min-h-screen md:w-64">
       {/* Logo and Hamburger Menu Wrapper */}
       <div className="flex items-center justify-between w-full md:w-auto md:flex-col">
         <Link

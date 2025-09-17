@@ -1,3 +1,5 @@
+// src/routes/AppRouter.jsx
+
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
@@ -16,12 +18,9 @@ import HelpCenter from "../pages/HelpCenter";
 import ContactUs from "../pages/ContactUs";
 import TermsOfService from "../pages/TermsOfServices";
 import PrivacyPolicy from "../pages/Privacy-info";
-
-// --- NEWLY ADDED IMPORTS ---
 import ForgotPassword from "../pages/ForgotPassword";
 import VerifyPasswordOtp from "../pages/VerifyPasswordOtp";
 import ResetPassword from "../pages/ResetPassword";
-// --- END NEW IMPORTS ---
 
 // Customer Pages
 import CustomerDashboard from "../pages/Customer/CustomerDashboard";
@@ -63,14 +62,15 @@ const AppRouter = () => {
       {/* Auth Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/admin" element={<Login isAdminLogin={true} />} />
+      {/* --- ADD THIS NEW ROUTE FOR STUDIO OWNERS --- */}
+      <Route path="/studio-owner" element={<Login isOwnerLogin={true} />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/verify-otp" element={<VerifyOtp />} />
 
-      {/* --- NEWLY ADDED FORGOT PASSWORD ROUTES --- */}
+      {/* Forgot Password Routes */}
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/verify-password-otp" element={<VerifyPasswordOtp />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      {/* --- END NEW ROUTES --- */}
 
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/help" element={<HelpCenter />} />

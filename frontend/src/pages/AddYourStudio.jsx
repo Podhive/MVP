@@ -134,7 +134,7 @@ const AddYourStudio = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full mb-6">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-indigo-900 rounded-full mb-6">
             <Mic className="h-10 w-10 text-white" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -162,27 +162,27 @@ const AddYourStudio = () => {
               can:
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-6 rounded-xl border border-blue-200 text-center">
+              <div className="bg-indigo-900 p-6 rounded-xl border border-blue-200 text-center">
                 <div className="text-2xl mb-2"></div>
-                <h3 className="font-semibold text-gray-900 mb-2">
+                <h3 className="font-semibold text-white mb-2">
                   Set up a basic podcast studio
                 </h3>
               </div>
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 text-center">
+              <div className="bg-indigo-900 p-6 rounded-xl border border-green-200 text-center">
                 <div className="text-2xl mb-2"></div>
-                <h3 className="font-semibold text-gray-900 mb-2">
+                <h3 className="font-semibold text-white mb-2">
                   Get bookings through PodHive
                 </h3>
               </div>
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-200 text-center">
+              <div className="bg-indigo-900 p-6 rounded-xl border border-purple-200 text-center">
                 <div className="text-2xl mb-2"></div>
-                <h3 className="font-semibold text-gray-900 mb-2">
+                <h3 className="font-semibold text-white mb-2">
                   Earn ₹4,00,000–₹5,00,000/month
                 </h3>
               </div>
-              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-6 rounded-xl border border-yellow-200 text-center">
+              <div className="bg-indigo-900 p-6 rounded-xl border border-yellow-200 text-center">
                 <div className="text-2xl mb-2"></div>
-                <h3 className="font-semibold text-gray-900 mb-2">
+                <h3 className="font-semibold text-white mb-2">
                   Scale your business
                 </h3>
               </div>
@@ -191,7 +191,7 @@ const AddYourStudio = () => {
         </div>
 
         {/* We Help You Set It Up */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white mb-12">
+        <div className="bg-indigo-900 rounded-2xl p-8 text-white mb-12">
           <h2 className="text-3xl font-bold mb-6"> We Help You Set It Up</h2>
           <p className="text-xl text-indigo-100 mb-8">
             Don't worry about the tech. We guide you with:
@@ -241,11 +241,11 @@ const AddYourStudio = () => {
           <div className="overflow-x-auto mb-6">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-gradient-to-r from-green-50 to-emerald-50">
-                  <th className="border border-green-200 p-4 text-left font-semibold text-gray-900">
+                <tr className="bg-indigo-900">
+                  <th className="border border-green-200 p-4 text-left font-semibold text-white">
                     Booking Type
                   </th>
-                  <th className="border border-green-200 p-4 text-left font-semibold text-gray-900">
+                  <th className="border border-green-200 p-4 text-left font-semibold text-white">
                     You Earn
                   </th>
                 </tr>
@@ -256,7 +256,7 @@ const AddYourStudio = () => {
                     <td className="border border-gray-200 p-4 text-gray-700">
                       {row.type}
                     </td>
-                    <td className="border border-gray-200 p-4 font-semibold text-green-600">
+                    <td className="border border-gray-200 p-4 font-semibold text-indigo-900">
                       {row.earning}
                     </td>
                   </tr>
@@ -265,8 +265,8 @@ const AddYourStudio = () => {
             </table>
           </div>
 
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
-            <p className="text-gray-700 text-center">
+          <div className="bg-indigo-900 p-6 rounded-xl border border-green-200">
+            <p className="text-white text-center">
               <strong>
                 (You set your own schedule – rent by hour, day, or weekend)
               </strong>
@@ -465,7 +465,7 @@ const AddYourStudio = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-6 rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold text-lg shadow-lg"
+              className="w-full bg-indigo-900 text-white py-4 px-6 rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold text-lg shadow-lg"
             >
               {isSubmitting ? (
                 <div className="flex items-center justify-center">
@@ -486,7 +486,7 @@ const AddYourStudio = () => {
         </div>
 
         {/* Still Thinking */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white text-center">
+        <div className="bg-indigo-900 rounded-2xl p-8 text-white text-center">
           <h2 className="text-3xl font-bold mb-6">Still Thinking?</h2>
           <p className="text-xl text-indigo-100 mb-2">
             PodHive partners earn money while empowering creators.
@@ -494,7 +494,7 @@ const AddYourStudio = () => {
           <p className="text-lg text-indigo-100 mb-8">
             No tenants. No hassle. Just bookings.
           </p>
-          <button className="bg-white text-indigo-600 px-8 py-4 rounded-xl hover:bg-gray-50 transition-colors font-semibold text-lg shadow-lg">
+          <button className="bg-white text-indigo-900 px-8 py-4 rounded-xl hover:bg-gray-50 transition-colors font-semibold text-lg shadow-lg">
             Get Started Now
           </button>
         </div>

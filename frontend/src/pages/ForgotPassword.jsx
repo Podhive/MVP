@@ -44,7 +44,7 @@ const ForgotPassword = () => {
       <div className="flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6 text-center">
+            <div className="bg-indigo-900 px-8 py-6 text-center">
               <div className="flex justify-center mb-4">
                 <div className="bg-white/20 p-3 rounded-full">
                   <Mic className="h-8 w-8 text-white" />
@@ -95,7 +95,7 @@ const ForgotPassword = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50"
+                  className="w-full bg-indigo-900 text-white py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50"
                 >
                   {loading ? "Sending..." : "Send Reset Code"}
                 </button>

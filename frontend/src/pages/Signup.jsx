@@ -90,9 +90,9 @@ const Signup = () => {
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6 text-center">
+            <div className="bg-indigo-900 px-8 py-6 text-center">
               <div className="flex justify-center mb-4">
-                <div className="bg-white/20 p-3 rounded-full">
+                <div className="bg-indigo-900 p-3 rounded-full">
                   <Mic className="h-8 w-8 text-white" />
                 </div>
               </div>
@@ -315,7 +315,7 @@ const Signup = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
+                  className="w-full bg-indigo-900 text-white py-3 px-4 rounded-lg hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
                 >
                   {loading ? (
                     <div className="flex items-center justify-center">

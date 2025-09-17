@@ -1,6 +1,8 @@
 const Studio = require("../models/Studio");
 const Booking = require("../models/Booking");
 const Availability = require("../models/Availability");
+const User = require("../models/User"); // Import User model
+const { sendStudioApprovalEmail } = require("../utils/email"); // Import the new email function
 
 // GET /admin/studios/pending
 const getPendingStudios = async (req, res) => {
@@ -9,7 +11,10 @@ const getPendingStudios = async (req, res) => {
   }
 
   try {
-    const studios = await Studio.find({ approved: false });
+    const studios = await Studio.find({ approved: false }).populate(
+      "author",
+      "name email"
+    );
     res.json(studios);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch pending studios" });
@@ -29,13 +34,22 @@ const approveStudio = async (req, res) => {
     studio.approved = true;
     await studio.save();
 
-    res.json({ message: "Studio approved", studio });
+    // --- ADDED: Send approval email to studio owner ---
+    const owner = await User.findById(studio.author);
+    if (owner) {
+      await sendStudioApprovalEmail({
+        to: owner.email,
+        studioName: studio.name,
+      });
+    }
+
+    res.json({ message: "Studio approved and owner notified", studio });
   } catch (error) {
     res.status(500).json({ message: "Failed to approve studio" });
   }
 };
 
-// DELETE /admin/bookings/:id - FIXED
+// DELETE /admin/bookings/:id
 const deleteBooking = async (req, res) => {
   if (req.user.userType !== "admin") {
     return res.status(403).json({ message: "Access denied: Admins only" });
@@ -47,21 +61,16 @@ const deleteBooking = async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    // This is the availability restoration logic.
-    // It finds the availability document for the studio and date,
-    // then updates all slots where the hour matches one of the hours in the booking.
     await Availability.updateOne(
       { studio: booking.studio, date: booking.date },
       { $set: { "slots.$[elem].isAvailable": true } },
       { arrayFilters: [{ "elem.hour": { $in: booking.hours } }] }
     );
 
-    // Now, delete the booking itself.
     await Booking.deleteOne({ _id: req.params.id });
 
     res.json({ message: "Booking deleted and slots restored" });
   } catch (error) {
-    // Add a console.log to see the actual error on the server
     console.error("Error in deleteBooking:", error);
     res.status(500).json({ message: "Failed to delete booking" });
   }

@@ -1,20 +1,9 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
-const unirest = require("unirest"); // Replaced twilio with unirest
+const axios = require("axios");
 const User = require("../models/User");
+const { sendOtpEmail, sendPasswordResetEmail } = require("../utils/email");
 require("dotenv").config();
-
-// Nodemailer transporter setup
-const transporter = nodemailer.createTransport({
-  service: "Gmail",
-  host: "smtp.gmail.com",
-  port: 465,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 // Generates a 4-digit OTP
 const generateOtp = () => Math.floor(1000 + Math.random() * 9000).toString();
@@ -31,6 +20,33 @@ const generateToken = (id, userType, expiresIn = "30d") => {
 // Password validation regex
 const passwordRegex =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+// ✅ Send WhatsApp OTP via Fast2SMS
+const sendWhatsAppOtp = async (phone, otp) => {
+  try {
+    const response = await axios.get("https://www.fast2sms.com/dev/whatsapp", {
+      params: {
+        authorization: process.env.FAST2SMS_API_KEY,
+        message_id: 3610, // ✅ Use approved OTP template_id from your sheet
+        variables_values: otp,
+        numbers: phone, // format: 91XXXXXXXXXX
+      },
+    });
+
+    if (response.data && response.data.return) {
+      return true;
+    } else {
+      console.error("Fast2SMS WhatsApp Error:", response.data);
+      return false;
+    }
+  } catch (error) {
+    console.error(
+      "Fast2SMS WhatsApp Exception:",
+      error.response?.data || error.message
+    );
+    return false;
+  }
+};
 
 // @desc    Register new user
 // @route   POST /user/signup
@@ -57,7 +73,7 @@ const registerUser = async (req, res) => {
           .status(400)
           .json({ message: "User already exists and verified" });
       }
-
+      // Update existing unverified user
       user.name = name;
       user.password = hashedPassword;
       user.userType = userType;
@@ -67,6 +83,7 @@ const registerUser = async (req, res) => {
       user.otpExpiresAt = otpExpiresAt;
       await user.save();
     } else {
+      // Create new user
       user = await User.create({
         name,
         email,
@@ -80,36 +97,32 @@ const registerUser = async (req, res) => {
       });
     }
 
-    const fast2smsReq = unirest("POST", "https://www.fast2sms.com/dev/bulkV2");
+    // ✅ Send both OTPs
+    const emailSent = await sendOtpEmail({ to: email, otp: emailOtp });
+    const whatsappSent = await sendWhatsAppOtp(phone, phoneOtp);
 
-    fast2smsReq.headers({
-      authorization: process.env.FAST2SMS_API_KEY,
-    });
+    if (!emailSent && !whatsappSent) {
+      return res
+        .status(500)
+        .json({ message: "Failed to send both Email & WhatsApp OTP" });
+    }
+    if (!emailSent) {
+      return res
+        .status(500)
+        .json({ message: "Failed to send Email OTP. Please try again." });
+    }
+    if (!whatsappSent) {
+      return res
+        .status(500)
+        .json({ message: "Failed to send WhatsApp OTP. Please try again." });
+    }
 
-    fast2smsReq.form({
-      variables_values: phoneOtp,
-      route: "otp",
-      numbers: phone,
-    });
-
-    fast2smsReq.end(function (response) {
-      if (response.error) {
-        console.error("Fast2SMS Error:", response.error);
-      }
-      console.log("Fast2SMS Response:", response.body);
-    });
-
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Your Email OTP",
-      text: `Your email OTP is: ${emailOtp}`,
-    });
-
-    res.status(201).json({
-      message: "OTP sent. Please verify OTP sent to your email and phone.",
+    // ✅ Only if both succeed
+    return res.status(201).json({
+      message: "OTP sent successfully to Email & WhatsApp. Please verify.",
     });
   } catch (error) {
+    console.error("Register User Error:", error);
     res
       .status(500)
       .json({ message: "Error during registration", error: error.message });
@@ -213,12 +226,13 @@ const forgotPassword = async (req, res) => {
   try {
     const user = await User.findOne({ email });
 
-    // Check if the user exists. If not, send a 404 error.
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(200).json({
+        message:
+          "If an account with that email exists, a password reset code has been sent.",
+      });
     }
 
-    // This logic now only runs if a user was found.
     const otp = generate6DigitOtp();
     const hashedOtp = await bcrypt.hash(otp, 10);
 
@@ -227,18 +241,13 @@ const forgotPassword = async (req, res) => {
     user.passwordResetAttempts = 0;
     await user.save();
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: user.email,
-      subject: "Your Password Reset Code",
-      text: `Your password reset code is: ${otp}. It will expire in 10 minutes.`,
-    });
+    await sendPasswordResetEmail({ to: user.email, otp: otp });
 
-    // Send a specific success message since we know the user exists.
     res.status(200).json({
       message: "A password reset code has been sent to your email.",
     });
   } catch (error) {
+    console.error("Forgot Password Error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -280,7 +289,6 @@ const verifyPasswordResetOtp = async (req, res) => {
       return res.status(400).json({ message: "Invalid OTP." });
     }
 
-    // OTP is correct, issue a short-lived reset token
     user.passwordResetOtp = undefined;
     user.passwordResetExpires = undefined;
     user.passwordResetAttempts = 0;
@@ -328,7 +336,6 @@ const resetPassword = async (req, res) => {
 
     res.status(200).json({ message: "Password has been reset successfully." });
   } catch (error) {
-    // Handle expired or invalid tokens
     if (
       error.name === "TokenExpiredError" ||
       error.name === "JsonWebTokenError"

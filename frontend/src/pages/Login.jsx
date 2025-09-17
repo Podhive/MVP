@@ -1,31 +1,35 @@
+// src/pages/Login.jsx
+
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Mic, Eye, EyeOff } from "lucide-react";
 import useAuth from "../context/useAuth";
 import Navbar from "../components/Navbar";
 
-const Login = ({ isAdminLogin = false }) => {
+const Login = ({ isAdminLogin = false, isOwnerLogin = false }) => {
   const { login, loading } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    userType: isAdminLogin ? "admin" : "customer",
+    userType: isAdminLogin ? "admin" : isOwnerLogin ? "owner" : "customer",
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    // Ensure userType is set to admin if it's the admin login page
     if (isAdminLogin) {
       setFormData((prev) => ({ ...prev, userType: "admin" }));
+    } else if (isOwnerLogin) {
+      setFormData((prev) => ({ ...prev, userType: "owner" }));
+    } else {
+      setFormData((prev) => ({ ...prev, userType: "customer" }));
     }
-  }, [isAdminLogin]);
+  }, [isAdminLogin, isOwnerLogin]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Clear error when user types
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -54,17 +58,11 @@ const Login = ({ isAdminLogin = false }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validate()) return;
-
     try {
       await login(formData);
-      // Redirect is handled in the AuthContext, which should redirect
-      // admin to /dashboard/admin upon successful login.
     } catch (error) {
       console.error("Login error:", error);
-
-      // Handle specific error cases
       if (error.response?.status === 401) {
         setErrors({
           general: "Invalid credentials. Please check your email and password.",
@@ -77,31 +75,35 @@ const Login = ({ isAdminLogin = false }) => {
     }
   };
 
+  // Create variables for cleaner conditional rendering
+  const isDedicatedLogin = isAdminLogin || isOwnerLogin;
+  const title = isAdminLogin
+    ? "Admin Sign In"
+    : isOwnerLogin
+    ? "Studio Partner Sign In"
+    : "Welcome Back";
+  const subtitle = isAdminLogin
+    ? "Access the PodHive Admin Dashboard"
+    : isOwnerLogin
+    ? "Access your Studio Partner Dashboard"
+    : "Sign in to your PodHive account";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       <Navbar />
-
       <div className="flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-6 text-center">
+            <div className="bg-indigo-900 px-8 py-6 text-center">
               <div className="flex justify-center mb-4">
-                <div className="bg-white/20 p-3 rounded-full">
+                <div className="bg-indigo-900 p-3 rounded-full">
                   <Mic className="h-8 w-8 text-white" />
                 </div>
               </div>
-              <h1 className="text-2xl font-bold text-white">
-                {isAdminLogin ? "Admin Sign In" : "Welcome Back"}
-              </h1>
-              <p className="text-indigo-100 mt-1">
-                {isAdminLogin
-                  ? "Access the PodHive Admin Dashboard"
-                  : "Sign in to your PodHive account"}
-              </p>
+              <h1 className="text-2xl font-bold text-white">{title}</h1>
+              <p className="text-indigo-100 mt-1">{subtitle}</p>
             </div>
 
-            {/* Form */}
             <div className="px-8 py-8">
               {errors.general && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6 text-sm">
@@ -136,7 +138,6 @@ const Login = ({ isAdminLogin = false }) => {
                 </div>
 
                 <div>
-                  {/* --- MODIFIED SECTION --- */}
                   <div className="flex items-center justify-between">
                     <label
                       htmlFor="password"
@@ -144,19 +145,17 @@ const Login = ({ isAdminLogin = false }) => {
                     >
                       Password
                     </label>
-                    {!isAdminLogin && (
-                      <div className="text-sm">
-                        <Link
-                          to="/forgot-password"
-                          className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
-                        >
-                          Forgot your password?
-                        </Link>
-                      </div>
-                    )}
+                    {/* --- FIX: The conditional rendering wrapper has been removed --- */}
+                    <div className="text-sm">
+                      <Link
+                        to="/forgot-password"
+                        className="font-medium text-indigo-900 hover:text-indigo-800 transition-colors"
+                      >
+                        Forgot your password?
+                      </Link>
+                    </div>
                   </div>
                   <div className="relative mt-2">
-                    {/* --- END MODIFIED SECTION --- */}
                     <input
                       id="password"
                       type={showPassword ? "text" : "password"}
@@ -189,40 +188,10 @@ const Login = ({ isAdminLogin = false }) => {
                   )}
                 </div>
 
-                {!isAdminLogin && (
-                  <div>
-                    <label
-                      htmlFor="userType"
-                      className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                      I am a
-                    </label>
-                    <select
-                      id="userType"
-                      name="userType"
-                      value={formData.userType}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                        errors.userType
-                          ? "border-red-300 bg-red-50"
-                          : "border-gray-300"
-                      }`}
-                    >
-                      <option value="customer">Content Creator</option>
-                      <option value="owner">Studio Partner</option>
-                    </select>
-                    {errors.userType && (
-                      <p className="mt-2 text-sm text-red-600">
-                        {errors.userType}
-                      </p>
-                    )}
-                  </div>
-                )}
-
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
+                  className="w-full bg-indigo-900 text-white py-3 px-4 rounded-lg hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
                 >
                   {loading ? (
                     <div className="flex items-center justify-center">
@@ -235,13 +204,13 @@ const Login = ({ isAdminLogin = false }) => {
                 </button>
               </form>
 
-              {!isAdminLogin && (
+              {!isDedicatedLogin && (
                 <div className="mt-8 text-center">
                   <p className="text-gray-600">
                     Don't have an account?{" "}
                     <Link
                       to="/signup"
-                      className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                      className="text-indigo-900 hover:text-indigo-800 font-medium transition-colors"
                     >
                       Create one here
                     </Link>

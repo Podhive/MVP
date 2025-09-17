@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, Mic } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import useAuth from "../context/useAuth";
 
 const Navbar = () => {
@@ -19,21 +19,20 @@ const Navbar = () => {
 
   // Determine user type for conditional rendering
   const isContentCreator = isAuthenticated() && role === "customer";
-  const isPrivilegedUser =
-    isAuthenticated() && (role === "admin" || role === "owner");
 
   return (
-    <nav className="bg-white shadow-lg border-b border-gray-100 sticky top-0 z-50">
+    <nav className="bg-gradient-to-br from-[#020610] to-indigo-900 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
+            {/* Logo with white text */}
             <Link to="/" className="flex items-center group">
-              <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-2 rounded-lg mr-3 group-hover:from-indigo-700 group-hover:to-purple-700 transition-all">
-                <Mic className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                PodHive
-              </span>
+              <img
+                src="/images/logo2.png"
+                alt="PodHive Logo"
+                className="h-16 w-auto mr-1 rounded-lg"
+              />
+              <span className="text-2xl font-bold text-white">PodHive</span>
             </Link>
           </div>
 
@@ -43,13 +42,13 @@ const Navbar = () => {
               <>
                 <Link
                   to="/"
-                  className="px-4 py-2 rounded-lg text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+                  className="px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors font-medium"
                 >
                   Home
                 </Link>
                 <Link
                   to="/about"
-                  className="px-4 py-2 rounded-lg text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+                  className="px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors font-medium"
                 >
                   About Us
                 </Link>
@@ -58,7 +57,7 @@ const Navbar = () => {
 
             <Link
               to="/studios"
-              className="px-4 py-2 rounded-lg text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+              className="px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors font-medium"
             >
               Studios
             </Link>
@@ -68,20 +67,20 @@ const Navbar = () => {
                 {isContentCreator && (
                   <Link
                     to="/add-your-studio"
-                    className="px-4 py-2 rounded-lg text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+                    className="px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors font-medium"
                   >
                     Setup Your Studio
                   </Link>
                 )}
                 <Link
                   to={getDashboardLink()}
-                  className="px-4 py-2 rounded-lg text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+                  className="px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors font-medium"
                 >
                   Dashboard
                 </Link>
                 <button
                   onClick={logout}
-                  className="px-4 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors font-medium"
+                  className="px-4 py-2 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-500/10 transition-colors font-medium"
                 >
                   Logout
                 </button>
@@ -90,13 +89,13 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  className="px-4 py-2 rounded-lg text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+                  className="px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors font-medium"
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup"
-                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 transition-all font-medium shadow-sm"
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-900 to-purple-900 text-white hover:from-indigo-700 hover:to-purple-700 transition-all font-medium shadow-sm"
                 >
                   Sign Up
                 </Link>
@@ -108,7 +107,7 @@ const Navbar = () => {
           <div className="md:hidden flex items-center">
             <button
               onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-lg text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 focus:outline-none transition-colors"
+              className="inline-flex items-center justify-center p-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 focus:outline-none transition-colors"
             >
               {isOpen ? (
                 <X className="h-6 w-6" />
@@ -122,20 +121,20 @@ const Navbar = () => {
 
       {/* Mobile menu */}
       {isOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 shadow-lg">
+        <div className="md:hidden bg-slate-900">
           <div className="px-2 pt-2 pb-3 space-y-1">
             {(!isAuthenticated() || isContentCreator) && (
               <>
                 <Link
                   to="/"
-                  className="block px-3 py-2 rounded-lg text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+                  className="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors font-medium"
                   onClick={() => setIsOpen(false)}
                 >
                   Home
                 </Link>
                 <Link
                   to="/about"
-                  className="block px-3 py-2 rounded-lg text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+                  className="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors font-medium"
                   onClick={() => setIsOpen(false)}
                 >
                   About Us
@@ -144,7 +143,7 @@ const Navbar = () => {
             )}
             <Link
               to="/studios"
-              className="block px-3 py-2 rounded-lg text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+              className="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors font-medium"
               onClick={() => setIsOpen(false)}
             >
               Studios
@@ -155,7 +154,7 @@ const Navbar = () => {
                 {isContentCreator && (
                   <Link
                     to="/add-your-studio"
-                    className="block px-3 py-2 rounded-lg text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+                    className="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors font-medium"
                     onClick={() => setIsOpen(false)}
                   >
                     Setup Your Studio
@@ -163,7 +162,7 @@ const Navbar = () => {
                 )}
                 <Link
                   to={getDashboardLink()}
-                  className="block px-3 py-2 rounded-lg text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+                  className="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors font-medium"
                   onClick={() => setIsOpen(false)}
                 >
                   Dashboard
@@ -173,7 +172,7 @@ const Navbar = () => {
                     logout();
                     setIsOpen(false);
                   }}
-                  className="block w-full text-left px-3 py-2 rounded-lg text-gray-700 hover:text-red-600 hover:bg-red-50 transition-colors font-medium"
+                  className="block w-full text-left px-3 py-2 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-500/10 transition-colors font-medium"
                 >
                   Logout
                 </button>
@@ -182,7 +181,7 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  className="block px-3 py-2 rounded-lg text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
+                  className="block px-3 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 transition-colors font-medium"
                   onClick={() => setIsOpen(false)}
                 >
                   Login

@@ -117,7 +117,7 @@ const PrivacyPolicy = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full mb-6">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-indigo-900 rounded-full mb-6">
             <Shield className="h-10 w-10 text-white" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -149,8 +149,8 @@ const PrivacyPolicy = () => {
               return (
                 <div key={section.id} className="p-8">
                   <div className="flex items-start mb-6">
-                    <div className="bg-indigo-100 p-3 rounded-xl mr-4 flex-shrink-0">
-                      <Icon className="h-6 w-6 text-indigo-600" />
+                    <div className="bg-indigo-900 p-3 rounded-xl mr-4 flex-shrink-0">
+                      <Icon className="h-6 w-6 text-white" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -163,7 +163,7 @@ const PrivacyPolicy = () => {
                     <ul className="space-y-3">
                       {section.content.map((item, itemIndex) => (
                         <li key={itemIndex} className="flex items-start">
-                          <div className="w-2 h-2 bg-indigo-600 rounded-full mt-2 mr-4 flex-shrink-0"></div>
+                          <div className="w-2 h-2 bg-indigo-900 rounded-full mt-2 mr-4 flex-shrink-0"></div>
                           <p className="text-gray-700 leading-relaxed">
                             {item}
                           </p>
@@ -178,7 +178,7 @@ const PrivacyPolicy = () => {
         </div>
 
         {/* Footer */}
-        <div className="mt-16 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-center text-white">
+        <div className="mt-16 bg-indigo-900 rounded-2xl p-8 text-center text-white">
           <h2 className="text-2xl font-bold mb-4">
             Questions about your Privacy?
           </h2>
@@ -189,7 +189,7 @@ const PrivacyPolicy = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
               href="/contact"
-              className="inline-flex items-center px-6 py-3 bg-white text-indigo-600 rounded-xl hover:bg-gray-50 transition-colors font-semibold"
+              className="inline-flex items-center px-6 py-3 bg-white text-indigo-900 rounded-xl hover:bg-gray-50 transition-colors font-semibold"
             >
               Contact Team
             </a>

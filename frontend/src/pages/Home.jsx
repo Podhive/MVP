@@ -21,7 +21,7 @@ const Home = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#020610] to-indigo-900">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -88,7 +88,7 @@ const Home = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
-              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
+              <div className="bg-indigo-900 p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
                 <Mic className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold mb-4 text-gray-900">
@@ -101,7 +101,7 @@ const Home = () => {
             </div>
 
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
-              <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
+              <div className="bg-indigo-900 p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
                 <Calendar className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold mb-4 text-gray-900">
@@ -114,7 +114,7 @@ const Home = () => {
             </div>
 
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
-              <div className="bg-gradient-to-br from-yellow-500 to-orange-600 p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
+              <div className="bg-indigo-900 p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
                 <Star className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold mb-4 text-gray-900">
@@ -127,7 +127,7 @@ const Home = () => {
             </div>
 
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
-              <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
+              <div className="bg-indigo-900 p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
                 <Shield className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold mb-4 text-gray-900">
@@ -140,7 +140,7 @@ const Home = () => {
             </div>
 
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
-              <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
+              <div className="bg-indigo-900 p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
                 <Clock className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold mb-4 text-gray-900">
@@ -153,7 +153,7 @@ const Home = () => {
             </div>
 
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow">
-              <div className="bg-gradient-to-br from-red-500 to-pink-600 p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
+              <div className="bg-indigo-900 p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
                 <Users className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold mb-4 text-gray-900">
@@ -169,36 +169,8 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Stats Section */}
-      {/* <div className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-indigo-600 mb-2">
-                500+
-              </div>
-              <div className="text-gray-600">Studios Listed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-indigo-600 mb-2">
-                10K+
-              </div>
-              <div className="text-gray-600">Bookings Made</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-indigo-600 mb-2">50+</div>
-              <div className="text-gray-600">Cities Covered</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-indigo-600 mb-2">4.9</div>
-              <div className="text-gray-600">Average Rating</div>
-            </div>
-          </div>
-        </div>
-      </div> */}
-
       {/* CTA Section */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 py-20">
+      <div className="bg-gradient-to-br from-[#020610] to-indigo-900 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
             Ready to Start Recording?
@@ -211,7 +183,7 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link
               to="/studios"
-              className="inline-flex items-center justify-center bg-white text-indigo-600 font-semibold px-8 py-4 rounded-xl hover:bg-gray-50 transition-colors shadow-lg"
+              className="inline-flex items-center justify-center bg-white text-indigo-900 font-semibold px-8 py-4 rounded-xl hover:bg-gray-50 transition-colors shadow-lg"
             >
               <Mic className="mr-2 h-5 w-5" />
               Find a Studio
@@ -219,7 +191,7 @@ const Home = () => {
             {!isAuthenticated() && (
               <Link
                 to="/signup"
-                className="inline-flex items-center justify-center bg-transparent text-white font-semibold px-8 py-4 rounded-xl border-2 border-white hover:bg-white hover:text-indigo-600 transition-colors"
+                className="inline-flex items-center justify-center bg-transparent text-white font-semibold px-8 py-4 rounded-xl border-2 border-white hover:bg-white hover:text-indigo-900 transition-colors"
               >
                 <Users className="mr-2 h-5 w-5" />
                 List a Studio
@@ -235,7 +207,6 @@ const Home = () => {
           <div className="grid md:grid-cols-4 gap-8">
             <div className="md:col-span-2">
               <div className="flex items-center mb-4">
-                <Mic className="h-8 w-8 mr-3 text-indigo-400" />
                 <span className="text-2xl font-bold">PodHive</span>
               </div>
               <p className="text-gray-400 mb-4 max-w-md">
@@ -319,26 +290,7 @@ const Home = () => {
             <p className="text-gray-400">
               &copy; {new Date().getFullYear()} PodHive. All rights reserved.
             </p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
-              {/* <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                Twitter
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                LinkedIn
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                Instagram
-              </a> */}
-            </div>
+            <div className="flex space-x-6 mt-4 md:mt-0"></div>
           </div>
         </div>
       </footer>

@@ -1,8 +1,11 @@
-// controllers/bookingController.js
 const Booking = require("../models/Booking");
 const Availability = require("../models/Availability");
 const Studio = require("../models/Studio");
-const sendBookingEmail = require("../utils/sendBookingEmail");
+const User = require("../models/User"); // Import User model
+const {
+  sendBookingConfirmationEmail,
+  sendBookingNotificationEmail,
+} = require("../utils/email");
 
 // Create booking
 const createBooking = async (req, res) => {
@@ -17,9 +20,10 @@ const createBooking = async (req, res) => {
     } = req.body;
 
     const date = new Date(dateStr);
+    const customer = req.user; // Get customer from auth middleware
 
     // 1) Validate studio and package/add-ons
-    const studio = await Studio.findById(studioId);
+    const studio = await Studio.findById(studioId).populate("author");
     if (!studio || !studio.approved) {
       return res
         .status(404)
@@ -47,32 +51,25 @@ const createBooking = async (req, res) => {
       }
     }
 
-    // --- REFACTORED AVAILABILITY CHECK ---
     // 2) Check availability for the specific date
     const availabilityForDate = await Availability.findOne({
       studio: studioId,
       date,
     });
-
     if (!availabilityForDate) {
       return res
         .status(400)
         .json({ message: "No availability for this date." });
     }
 
-    // Check if each requested hour is available
     const availableSlots = availabilityForDate.slots.filter(
       (slot) => hours.includes(slot.hour) && slot.isAvailable
     );
-
     if (availableSlots.length !== hours.length) {
-      return res
-        .status(400)
-        .json({
-          message: "One or more of the selected hours are not available.",
-        });
+      return res.status(400).json({
+        message: "One or more of the selected hours are not available.",
+      });
     }
-    // --- END OF REFACTOR ---
 
     // 3) Calculate total price
     const hoursCount = hours.length;
@@ -82,7 +79,7 @@ const createBooking = async (req, res) => {
     // 4) Create booking
     const booking = await Booking.create({
       studio: studioId,
-      customer: req.user._id,
+      customer: customer._id,
       date,
       hours,
       packageKey,
@@ -91,56 +88,44 @@ const createBooking = async (req, res) => {
       paymentStatus,
     });
 
-    // --- REFACTORED UPDATE OPERATION ---
-    // 5) Mark availability as booked using arrayFilters
+    // 5) Mark availability as booked
     await Availability.updateOne(
       { _id: availabilityForDate._id },
       { $set: { "slots.$[elem].isAvailable": false } },
       { arrayFilters: [{ "elem.hour": { $in: hours } }] }
     );
-    // --- END OF REFACTOR ---
 
-    // 6) Send confirmation emails
-    const owner = await Studio.findById(studioId).populate(
-      "author",
-      "email name"
-    );
-    const ownerEmail = owner.author.email;
-    const customerEmail = req.user.email;
-
-    const emailBody = (recipientName, role) => `
-      <h3>Hello ${recipientName},</h3>
-      <p>Your booking has been ${
-        role === "owner" ? "received" : "confirmed"
-      }:</p>
-      <ul>
-        <li><strong>Studio:</strong> ${owner.name}</li>
-        <li><strong>Date:</strong> ${date.toLocaleDateString()}</li>
-        <li><strong>Hours:</strong> ${hours
-          .map((h) => `${h}:00`)
-          .join(", ")}</li>
-        <li><strong>Package:</strong> ${pkg.key}</li>
-        ${
-          validAddons.length
-            ? `<li><strong>Add-ons:</strong> ${validAddons
-                .map((a) => `${a.key} x${a.quantity}`)
-                .join(", ")}</li>`
-            : ""
-        }
-        <li><strong>Total Price:</strong> ₹${totalPrice}</li>
-      </ul>
-      <p>Thank you,<br/>Podcast Studio Booking</p>
-    `;
-
-    await sendBookingEmail({
-      to: customerEmail,
-      subject: "Your Booking Confirmation",
-      html: emailBody(req.user.name || "Customer", "customer"),
+    // --- 6) UPDATED EMAIL LOGIC ---
+    // Send confirmation to customer (content creator)
+    await sendBookingConfirmationEmail({
+      to: customer.email,
+      details: {
+        customerName: customer.name,
+        studioName: studio.name,
+        ownerName: studio.author.name,
+        ownerPhone: studio.author.phone,
+        studioLocation: `${studio.location.fullAddress}, ${studio.location.city}`,
+        bookingDate: date,
+        slotTimings: hours,
+        duration: hours.length,
+        packageEquipment: pkg.equipment, // Pass equipment list
+      },
     });
-    await sendBookingEmail({
-      to: ownerEmail,
-      subject: "New Booking Received",
-      html: emailBody(owner.author.name || "Owner", "owner"),
+
+    // Send notification to owner
+    await sendBookingNotificationEmail({
+      to: studio.author.email,
+      details: {
+        ownerName: studio.author.name,
+        customerName: customer.name,
+        customerPhone: customer.phone,
+        customerEmail: customer.email,
+        studioName: studio.name,
+        bookingDate: date,
+        slotTimings: hours,
+        duration: hours.length,
+        packageEquipment: pkg.equipment, // Pass equipment list
+      },
     });
 
     return res.status(201).json({ message: "Booking successful", booking });

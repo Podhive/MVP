@@ -82,7 +82,7 @@ const CustomerDashboard = () => {
                 </p>
               </div>
               <div className="hidden lg:block">
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl shadow-lg">
+                <div className="bg-indigo-900 text-white px-6 py-3 rounded-xl shadow-lg">
                   <div className="flex items-center">
                     <span className="font-medium">Content Creator</span>
                   </div>
@@ -271,7 +271,7 @@ const CustomerDashboard = () => {
                   </p>
                   <Link
                     to="/studios"
-                    className="inline-flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                    className="inline-flex items-center bg-indigo-900 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
                   >
                     <Mic className="h-4 w-4 mr-2" />
                     Browse Studios
@@ -282,7 +282,7 @@ const CustomerDashboard = () => {
           </div>
 
           {/* Tips Section */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-8 rounded-2xl text-white">
+          <div className="bg-indigo-900 p-8 rounded-2xl text-white">
             <h2 className="text-2xl font-bold mb-6">
               Pro Tips for Great Recordings
             </h2>

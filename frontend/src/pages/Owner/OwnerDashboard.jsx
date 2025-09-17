@@ -110,7 +110,7 @@ const OwnerDashboard = () => {
                 </p>
               </div>
               <div className="flex items-center gap-4">
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-3 rounded-xl shadow-lg">
+                <div className="bg-indigo-900 text-white px-6 py-3 rounded-xl shadow-lg">
                   <div className="flex items-center">
                     <Users className="h-5 w-5 mr-2" />
                     <span className="font-medium">Studio Owner</span>
@@ -423,7 +423,7 @@ const OwnerDashboard = () => {
               </div>
 
               {/* Tips for Success */}
-              <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-8 rounded-2xl text-white">
+              <div className="bg-indigo-900 p-8 rounded-2xl text-white">
                 <h2 className="text-2xl font-bold mb-6">Tips for Success</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl">

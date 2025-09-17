@@ -3,7 +3,7 @@
 const {
   sendContactEmail,
   sendStudioInquiryEmail,
-} = require("../utils/emailService.js");
+} = require("../utils/email.js"); // Updated import path
 
 /**
  * Handles the original contact form submissions.
@@ -63,12 +63,10 @@ const handleStudioInquiry = async (req, res) => {
       needsHelp,
     });
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Inquiry submitted successfully! We will contact you shortly.",
-      });
+    res.status(200).json({
+      success: true,
+      message: "Inquiry submitted successfully! We will contact you shortly.",
+    });
   } catch (error) {
     console.error("Error handling studio inquiry form:", error);
     res
